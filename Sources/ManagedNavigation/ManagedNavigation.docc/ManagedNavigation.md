@@ -2,7 +2,7 @@
 
 Programmatic, type-safe navigation for SwiftUI apps.
 
-## Overview
+![AppIcon](app-icon)
 
 ManagedNavigation provides a thin layer on top of SwiftUI's `NavigationStack`
 that gives you full programmatic control over the navigation path. Instead of

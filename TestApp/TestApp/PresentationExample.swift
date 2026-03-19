@@ -11,38 +11,43 @@ struct PresentationExample: View {
   
   var body: some View {
     ManagedPresentation(manager: $manager) {
-      VStack(spacing: 16) {
-        Section("Sheets") {
-          Button("Settings") {
-            manager.push(SettingsDestination())
+      NavigationStack {
+        VStack(spacing: 16) {
+          Section("Sheets") {
+            Button("Settings") {
+              manager.push(SettingsDestination())
+            }
+            Button("Profile") {
+              manager.push(ProfileDestination())
+            }
           }
-          Button("Profile") {
-            manager.push(ProfileDestination())
+          
+          Section("Full Screen Cover") {
+            Button("Account") {
+              manager.push(AccountDestination())
+            }
+          }
+          
+          Divider().padding(.horizontal)
+          
+          Section("Multiple") {
+            Button("Settings → Profile → Notifications") {
+              manager.push([
+                SettingsDestination(),
+                ProfileDestination(),
+                PushNotificationsSettingsDestination(),
+              ])
+            }
+            Button("Replace path: Account") {
+              manager = NavigationManager([AccountDestination()])
+            }
           }
         }
-        
-        Section("Full Screen Cover") {
-          Button("Account") {
-            manager.push(AccountDestination())
-          }
-        }
-        
-        Divider().padding(.horizontal)
-        
-        Section("Multiple") {
-          Button("Settings → Profile → Notifications") {
-            manager.push([
-              SettingsDestination(),
-              ProfileDestination(),
-              PushNotificationsSettingsDestination(),
-            ])
-          }
-          Button("Replace path: Account") {
-            manager = NavigationManager([AccountDestination()])
-          }
-        }
+        .padding()
+        .navigationTitle("Presentation")
+        .debugView()
       }
-      .padding()
+      .buttonStyle(.glass)
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .sheet(for: SettingsDestination.self) { _ in
         SettingsView()
@@ -60,7 +65,6 @@ struct PresentationExample: View {
         AccountView()
       }
       #endif
-      .debugView()
     }
   }
 }
@@ -78,14 +82,15 @@ struct SettingsView: View {
           navigator?.popToRoot()
         }
       }
+      .buttonStyle(.glass)
       .padding()
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .navigationTitle("Settings")
       .sheet(for: PushNotificationsSettingsDestination.self) { _ in
         PushNotificationsSettings()
       }
+      .debugView()
     }
-    .debugView()
   }
 }
 
@@ -102,11 +107,12 @@ struct PushNotificationsSettings: View {
           navigator?.popToRoot()
         }
       }
+      .buttonStyle(.glass)
       .padding()
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .navigationTitle("Notifications")
+      .debugView()
     }
-    .debugView()
   }
 }
 
@@ -122,11 +128,12 @@ struct ProfileView: View {
           navigator?.pop()
         }
       }
+      .buttonStyle(.glass)
       .padding()
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .navigationTitle("Profile")
+      .debugView()
     }
-    .debugView()
   }
 }
 struct AccountView: View {
@@ -141,11 +148,12 @@ struct AccountView: View {
           navigator?.pop()
         }
       }
-      .padding()
+      .buttonStyle(.glass)
+      .padding(.horizontal)
       .frame(maxWidth: .infinity, maxHeight: .infinity)
       .navigationTitle("Account")
+      .debugView()
     }
-    .debugView()
   }
 }
 

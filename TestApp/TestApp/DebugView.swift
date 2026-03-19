@@ -181,6 +181,7 @@ private struct BreadcrumbButton: View {
 }
 
 struct PathInspectorView: View {
+  @Environment(\.dismiss) private var dismiss
   @Binding var path: Data?
 
   var body: some View {
@@ -211,17 +212,11 @@ struct PathInspectorView: View {
         }
       }
       .navigationTitle("Path Inspector")
-      #if !os(macOS) && !os(tvOS)
-      .navigationBarTitleDisplayMode(.inline)
-      #endif
-      .toolbar {
-        if path != nil {
-          ToolbarItem(placement: .destructiveAction) {
-            Button("Delete", role: .destructive) {
-              path = nil
-            }
-          }
+      .safeAreaBar(edge: .bottom) {
+        Button("Close") {
+          dismiss()
         }
+        .buttonStyle(.glass)
       }
     }
   }

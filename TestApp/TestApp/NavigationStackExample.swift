@@ -28,7 +28,8 @@ struct NavigationStackExample: View {
           ])
         }
       }
-      .navigationTitle("Root")
+      .buttonStyle(.glass)
+      .navigationTitle("Navigation Stack")
       .navigationDestination(for: HomeDestination.self) { _ in
         HomeView()
       }
@@ -57,10 +58,8 @@ struct HomeView: View {
         navigator?.push(HomeDestination())
       }
     }
+    .buttonStyle(.glass)
     .navigationTitle("Home")
-    #if !os(macOS) && !os(tvOS)
-    .navigationBarTitleDisplayMode(.inline)
-    #endif
     .debugView()
   }
 }
@@ -103,17 +102,10 @@ struct DetailsView: View {
         Button("Pop to first Home") {
           navigator?.popToFirst(HomeDestination.self)
         }
-        Button("Pop to first Details (predicate)") {
-          navigator?.popTo(where: { context in
-            context.destination is DetailsDestination
-          })
-        }
       }
     }
+    .buttonStyle(.glass)
     .navigationTitle("Details")
-    #if !os(macOS) && !os(tvOS)
-    .navigationBarTitleDisplayMode(.inline)
-    #endif
     .debugView()
   }
 }

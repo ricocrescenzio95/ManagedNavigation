@@ -7,7 +7,7 @@ struct TestApp: App {
       TabView {
         NavigationStackExample()
           .tabItem {
-            Label("Navigation", systemImage: "square.stack.3d.up")
+            Label("Navigation Stack", systemImage: "square.stack.3d.down.forward")
           }
         PresentationExample()
           .tabItem {

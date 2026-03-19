@@ -1,3 +1,7 @@
+<p align="center">
+<img src="./Sources/ManagedNavigation/ManagedNavigation.docc/Resources/app-icon.png" width="200">
+</p>
+
 # ManagedNavigation
 
 ### Programmatic navigation management for SwiftUI
