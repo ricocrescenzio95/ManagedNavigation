@@ -1,5 +1,5 @@
 <p align="center">
-<img src="./Sources/ManagedNavigation/ManagedNavigation.docc/Resources/app-icon.png" width="200">
+<img src="./Sources/ManagedNavigation/ManagedNavigation.docc/Resources/app-icon@3x.png" width="200">
 </p>
 
 # ManagedNavigation
