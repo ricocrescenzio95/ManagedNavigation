@@ -8,9 +8,9 @@ struct PresentationData {
     case sheet
     case fullScreenCover
   }
-  var view: (any NavigationDestination) -> AnyView
+  var view: (any NavigationDestination, _ index: Int) -> any View
   var presentationType: PresentationType
-  var onDismiss: ((any NavigationDestination) -> Void)?
+  var onDismiss: ((any NavigationDestination, _ index: Int) -> Void)?
 }
 
 struct PresentationPreferenceKey: PreferenceKey {
@@ -23,23 +23,32 @@ struct PresentationPreferenceKey: PreferenceKey {
   }
 }
 
+/// The context passed to presentation content and dismiss closures.
+///
+/// Contains the destination instance that triggered the presentation and
+/// its index in the ``NavigationManager``'s path.
+public struct PresentationContext<D: NavigationDestination> {
+  /// The destination instance that triggered this presentation.
+  public var destination: D
+  /// The zero-based index of this presentation in the manager's path.
+  public var index: Int
+}
+
 private struct PresentationDestinationModifier<D: NavigationDestination, C: View>: ViewModifier {
   @Environment(\.navigator) private var navigator
   
   var data: D.Type
-  var viewContent: (D) -> C
-  var onDismiss: ((D) -> Void)?
+  var viewContent: (PresentationContext<D>) -> C
+  var onDismiss: ((PresentationContext<D>) -> Void)?
   var presentationType: PresentationData.PresentationType
   
   func body(content: Content) -> some View {
     content
       .transformPreference(PresentationPreferenceKey.self) { value in
-        value[data.navigationID] = .init(
-          view: {
-            AnyView(viewContent($0 as! D))
-          },
+        value[AnyHashable(data.id)] = .init(
+          view: { viewContent(.init(destination: $0 as! D, index: $1)) },
           presentationType: presentationType,
-          onDismiss: { onDismiss?($0 as! D) }
+          onDismiss: { onDismiss?(.init(destination: $0 as! D, index: $1)) }
         )
       }
       .onAppear {
@@ -60,6 +69,10 @@ extension View {
   /// pushed onto the ``NavigationManager``'s path, the sheet is presented
   /// automatically.
   ///
+  /// The sheet is matched by ``NavigationDestination/navigationID``.
+  /// Replacing the destination with another instance of the same type
+  /// updates the sheet content without dismissing and re-presenting it.
+  ///
   /// ```swift
   /// ManagedPresentation(manager: $manager) {
   ///     MyRootView()
@@ -76,8 +89,8 @@ extension View {
   ///     returns the sheet content.
   public func sheet<D: NavigationDestination, C: View>(
     for data: D.Type,
-    onDismiss: ((D) -> Void)? = nil,
-    @ViewBuilder content: @escaping (D) -> C
+    onDismiss: ((PresentationContext<D>) -> Void)? = nil,
+    @ViewBuilder content: @escaping (PresentationContext<D>) -> C
   ) -> some View {
     modifier(
       PresentationDestinationModifier(
@@ -96,6 +109,10 @@ extension View {
   /// destination is pushed onto the ``NavigationManager``'s path, the cover
   /// is presented automatically.
   ///
+  /// The cover is matched by ``NavigationDestination/navigationID``.
+  /// Replacing the destination with another instance of the same type
+  /// updates the cover content without dismissing and re-presenting it.
+  ///
   /// ```swift
   /// ManagedPresentation(manager: $manager) {
   ///     MyRootView()
@@ -113,8 +130,8 @@ extension View {
   @available(macOS, unavailable)
   public func fullScreenCover<D: NavigationDestination, C: View>(
     for data: D.Type,
-    onDismiss: ((D) -> Void)? = nil,
-    @ViewBuilder content: @escaping (D) -> C
+    onDismiss: ((PresentationContext<D>) -> Void)? = nil,
+    @ViewBuilder content: @escaping (PresentationContext<D>) -> C
   ) -> some View {
     modifier(
       PresentationDestinationModifier(

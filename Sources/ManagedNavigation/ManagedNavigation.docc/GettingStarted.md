@@ -223,6 +223,13 @@ Child views inside presented sheets can use the
 ``SwiftUICore/EnvironmentValues/navigator`` environment value to push and
 pop destinations, just like in a ``ManagedNavigationStack``.
 
+> Tip: Presentations are identified by
+> ``NavigationDestination/navigationID``, not by the full value of the
+> destination. If you replace a destination in the path with another
+> instance of the same type but different data, the presented sheet or
+> cover updates its content in place without being dismissed and
+> re-presented.
+
 ## Save and Restore the Navigation Stack
 
 If all your destinations conform to `Codable`, you can serialize the entire
