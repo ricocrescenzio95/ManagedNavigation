@@ -5,7 +5,7 @@ import CompilerPluginSupport
 
 let package = Package(
   name: "ManagedNavigation",
-  platforms: [.iOS(.v16), .macOS(.v13), .macCatalyst(.v16), .tvOS(.v16), .visionOS(.v1)],
+  platforms: [.iOS(.v17), .macOS(.v14), .macCatalyst(.v17), .tvOS(.v17), .visionOS(.v1)],
   products: [
     .library(
       name: "ManagedNavigation",

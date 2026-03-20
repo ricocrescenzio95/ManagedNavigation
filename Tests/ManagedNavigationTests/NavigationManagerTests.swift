@@ -318,8 +318,8 @@ struct NavigationScanContextTests {
     let path: [any NavigationDestination] = [TestHome(), TestDetails(id: "abc")]
     let homeContext = NavigationManager.NavigationScanContext(path: path, index: 0)
     let detailsContext = NavigationManager.NavigationScanContext(path: path, index: 1)
-    #expect(homeContext.destinationID == "TestHome")
-    #expect(detailsContext.destinationID == "TestDetails")
+    #expect(homeContext.destination.matchesID("TestHome"))
+    #expect(detailsContext.destination.matchesID("TestDetails"))
   }
 }
 
@@ -460,21 +460,124 @@ struct PathSyncTests {
 struct NavigationDestinationTests {
   @Test("navigationID returns type name by default")
   func defaultNavigationID() {
-    #expect(TestHome.navigationID == "TestHome")
-    #expect(TestDetails.navigationID == "TestDetails")
-    #expect(TestSettings.navigationID == "TestSettings")
+    #expect(TestHome.id == "TestHome")
+    #expect(TestDetails.id == "TestDetails")
+    #expect(TestSettings.id == "TestSettings")
   }
 
   @Test("Instance navigationID matches static navigationID")
   func instanceNavigationID() {
     let destination = TestDetails(id: "abc")
-    #expect(destination.navigationID == TestDetails.navigationID)
+    #expect(destination.matchesID(TestDetails.id))
   }
 
   @Test("type property returns Self.self")
   func typeProperty() {
     let destination = TestDetails(id: "abc")
     #expect(destination.type == TestDetails.self)
+  }
+}
+
+// MARK: - matchesID
+
+@Suite("matchesID")
+struct MatchesIDTests {
+  @Test("Returns true for matching NavigationID")
+  func matchingID() {
+    let destination = TestHome()
+    #expect(destination.matchesID("TestHome"))
+  }
+
+  @Test("Returns false for non-matching NavigationID")
+  func nonMatchingID() {
+    let destination = TestHome()
+    #expect(!destination.matchesID("TestDetails"))
+  }
+
+  @Test("Returns false when the Hashable type cannot be cast to NavigationID")
+  func incompatibleType() {
+    let destination = TestHome()
+    #expect(!destination.matchesID(42))
+  }
+
+  @Test("Matches against the static id value")
+  func matchesStaticID() {
+    let destination = TestDetails(id: "abc")
+    #expect(destination.matchesID(TestDetails.id))
+  }
+}
+
+// MARK: - matchesDestination
+
+@Suite("matchesDestination")
+struct MatchesDestinationTests {
+  @Test("Returns true for same type even with different data")
+  func sameTypeDifferentData() {
+    let a = TestDetails(id: "a")
+    let b = TestDetails(id: "b")
+    #expect(a.matchesDestination(b))
+  }
+
+  @Test("Returns true for same type with identical data")
+  func sameTypeIdenticalData() {
+    let a = TestDetails(id: "a")
+    let b = TestDetails(id: "a")
+    #expect(a.matchesDestination(b))
+  }
+
+  @Test("Returns false for different types")
+  func differentTypes() {
+    let home = TestHome()
+    let settings = TestSettings()
+    #expect(!home.matchesDestination(settings))
+  }
+
+  @Test("Returns true for value types with no extra properties")
+  func noExtraProperties() {
+    let a = TestHome()
+    let b = TestHome()
+    #expect(a.matchesDestination(b))
+  }
+}
+
+// MARK: - equalsDestination
+
+@Suite("equalsDestination")
+struct EqualsDestinationTests {
+  @Test("Returns true for fully equal destinations")
+  func fullyEqual() {
+    let a = TestDetails(id: "abc")
+    let b = TestDetails(id: "abc")
+    #expect(a.equalsDestination(b))
+  }
+
+  @Test("Returns false for same type with different data")
+  func sameTypeDifferentData() {
+    let a = TestDetails(id: "a")
+    let b = TestDetails(id: "b")
+    #expect(!a.equalsDestination(b))
+  }
+
+  @Test("Returns false for different types")
+  func differentTypes() {
+    let home = TestHome()
+    let settings = TestSettings()
+    #expect(!home.equalsDestination(settings))
+  }
+
+  @Test("Returns true for value types with no stored properties")
+  func noStoredProperties() {
+    let a = TestHome()
+    let b = TestHome()
+    #expect(a.equalsDestination(b))
+  }
+
+  @Test("matchesDestination true but equalsDestination false for different data")
+  func matchesButNotEquals() {
+    let a = TestDetails(id: "first")
+    let b = TestDetails(id: "second")
+    #expect(a.matchesDestination(b))
+    #expect(!a.equalsDestination(b))
   }
 }
 
@@ -635,6 +738,6 @@ struct NavigationScanContextAdditionalTests {
   func destinationIDMatchesType() {
     let path: [any NavigationDestination] = [TestDetails(id: "abc")]
     let context = NavigationManager.NavigationScanContext(path: path, index: 0)
-    #expect(context.destinationID == TestDetails.navigationID)
+    #expect(context.destination.matchesID(TestDetails.id))
   }
 }

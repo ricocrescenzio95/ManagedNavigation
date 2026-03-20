@@ -44,6 +44,6 @@ public struct ManagedNavigationStack<Root: View>: View {
     NavigationStack(path: $manager._path) {
       root
     }
-    .environment(\.navigator, .init(navigationManager: $manager))
+    .environment(\.navigator, $manager)
   }
 }

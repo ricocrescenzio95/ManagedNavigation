@@ -56,7 +56,7 @@ public struct NavigationManager {
   /// This array reflects the full ordered list of destinations that have been
   /// pushed onto the stack. The first element is the bottom of the stack
   /// (pushed first), and the last element is the top (most recently pushed).
-  public internal(set) var path = [any NavigationDestination]()
+  public private(set) var path = [any NavigationDestination]()
   
   /// Creates an empty navigation manager with no destinations on the stack.
   public init() {}
@@ -110,6 +110,31 @@ public struct NavigationManager {
     }
   }
   
+  /// Replaces the destination at the given index with a new destination.
+  ///
+  /// The stack above the replaced index is preserved. Because `NavigationPath`
+  /// only supports append/removeLast, the path is rebuilt from the replacement
+  /// index onward.
+  ///
+  /// ```swift
+  /// // Stack: [Home, Details, Settings]
+  /// manager.replace(ProfileDestination(), at: 1)
+  /// // Stack: [Home, Profile, Settings]
+  /// ```
+  ///
+  /// - Parameters:
+  ///   - destination: The new destination to insert.
+  ///   - index: The zero-based index in ``path`` of the destination to replace.
+  @discardableResult public mutating func replace(_ destination: any NavigationDestination, at index: Int) -> Bool {
+    guard path.indices.contains(index) else { return false }
+    var newPath = Array(path[..<index])
+    newPath.append(destination)
+    newPath.append(contentsOf: path[(index + 1)...])
+    // Rebuild entirely to avoid didSet conflicts
+    self = .init(newPath)
+    return true
+  }
+  
   // MARK: - Pop
   
   /// Pops back to the **last** occurrence of the given destination type.
@@ -123,7 +148,7 @@ public struct NavigationManager {
   ///
   /// - Parameter destinationType: The type of destination to pop back to.
   /// - Returns: `true` if a matching destination was found, `false` otherwise.
-  @discardableResult public mutating func popTo<Destination: Hashable>(_ destinationType: Destination.Type) -> Bool {
+  @discardableResult public mutating func popTo<Destination: NavigationDestination>(_ destinationType: Destination.Type) -> Bool {
     guard let targetIndex = path.lastIndex(where: { type(of: $0) == destinationType }) else {
       return false
     }
@@ -174,7 +199,7 @@ public struct NavigationManager {
   ///
   /// - Parameter destinationType: The type of destination to pop back to.
   /// - Returns: `true` if a matching destination was found, `false` otherwise.
-  @discardableResult public mutating func popToFirst<Destination: Hashable>(_ destinationType: Destination.Type) -> Bool {
+  @discardableResult public mutating func popToFirst<Destination: NavigationDestination>(_ destinationType: Destination.Type) -> Bool {
     guard let targetIndex = path.firstIndex(where: { type(of: $0) == destinationType }) else {
       return false
     }
@@ -212,7 +237,7 @@ public struct NavigationManager {
   ///   - index: The zero-based index in ``path`` to pop back to.
   /// - Returns: `true` if the destination at `index` matches the type and the stack
   ///   was trimmed, `false` otherwise.
-  @discardableResult public mutating func popTo<Destination: Hashable>(_ destinationType: Destination.Type, at index: Int) -> Bool {
+  @discardableResult public mutating func popTo<Destination: NavigationDestination>(_ destinationType: Destination.Type, at index: Int) -> Bool {
     guard path.indices.contains(index), type(of: path[index]) == destinationType else {
       return false
     }
@@ -253,6 +278,17 @@ public struct NavigationManager {
   }
 }
 
+extension NavigationManager: Hashable {
+  public static func == (lhs: NavigationManager, rhs: NavigationManager) -> Bool {
+    lhs.path.map { AnyHashable($0) } == rhs.path.map { AnyHashable($0) }
+  }
+  public func hash(into hasher: inout Hasher) {
+    for destination in path {
+      hasher.combine(destination)
+    }
+  }
+}
+
 // MARK: - NavigationScanContext
 
 extension NavigationManager {
@@ -276,9 +312,6 @@ extension NavigationManager {
 
     /// The destination currently being evaluated.
     public var destination: any NavigationDestination { path[index] }
-    
-    /// The ``NavigationDestination/navigationID`` of the current destination.
-    public var destinationID: String { destination.navigationID }
   }
 }
 

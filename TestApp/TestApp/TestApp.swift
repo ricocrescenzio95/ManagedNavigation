@@ -1,4 +1,14 @@
 import SwiftUI
+import ManagedNavigation
+
+struct HomeViewDestination: NavigationDestination, Codable {}
+struct SettingsDestination: NavigationDestination, Codable {}
+struct PushNotificationsSettingsDestination: NavigationDestination, Codable {
+  var id: UUID
+}
+struct ProfileDestination: NavigationDestination, Codable {}
+struct AccountDestination: NavigationDestination, Codable {}
+struct NonRegisteredDestination: NavigationDestination {}
 
 @main
 struct TestApp: App {
