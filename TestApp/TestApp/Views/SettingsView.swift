@@ -34,7 +34,7 @@ struct SettingsView: View {
       Section("Notifications") {
         Toggle("Enable Notifications", isOn: $notificationsEnabled)
         Button("Push Notification Settings") {
-          navigator?.push(PushNotificationsSettingsDestination(id: UUID()))
+          navigator?.push(PushNotificationsSettingsDestination(id: UUID().uuidString))
         }
         .disabled(!notificationsEnabled)
       }
@@ -100,16 +100,11 @@ struct SettingsView: View {
     .navigationTitle("Settings")
     .sheet(for: PushNotificationsSettingsDestination.self) { context in
       NavigationStack {
-        PushNotificationsSettingsView(id: context.destination.id.uuidString)
-          .task {
-            try? await Task.sleep(for: .seconds(2))
-            // To test view refresh
-            navigator?.replace(PushNotificationsSettingsDestination(id: UUID()), at: context.index)
-          }
+        PushNotificationsSettingsView(id: context.destination.id)
       }
     }
     .navigationDestination(for: PushNotificationsSettingsDestination.self) {
-      PushNotificationsSettingsView(id: $0.id.uuidString)
+      PushNotificationsSettingsView(id: $0.id)
     }
   }
 }

@@ -280,7 +280,11 @@ public struct NavigationManager {
 
 extension NavigationManager: Hashable {
   public static func == (lhs: NavigationManager, rhs: NavigationManager) -> Bool {
-    lhs.path.map { AnyHashable($0) } == rhs.path.map { AnyHashable($0) }
+    guard lhs.path.count == rhs.path.count else { return false }
+    return zip(lhs.path, rhs.path).allSatisfy {
+      let isEqual = $0.equalsDestination($1) // type checker fails with direct return (wtf???)
+      return isEqual
+    }
   }
   public func hash(into hasher: inout Hasher) {
     for destination in path {

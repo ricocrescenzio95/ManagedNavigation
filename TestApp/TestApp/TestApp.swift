@@ -4,7 +4,7 @@ import ManagedNavigation
 struct HomeViewDestination: NavigationDestination, Codable {}
 struct SettingsDestination: NavigationDestination, Codable {}
 struct PushNotificationsSettingsDestination: NavigationDestination, Codable {
-  var id: UUID
+  var id: String
 }
 struct ProfileDestination: NavigationDestination, Codable {}
 struct AccountDestination: NavigationDestination, Codable {}

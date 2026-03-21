@@ -38,11 +38,11 @@ import Observation
 /// ``SwiftUICore/EnvironmentValues/navigator`` environment value.
 public struct ManagedPresentation<Root: View>: View {
   @State private var model = PresentationModel()
-  
+
   @Binding var manager: NavigationManager
-  
+
   var root: Root
-  
+
   /// Creates a managed presentation container.
   ///
   /// - Parameters:
@@ -71,29 +71,20 @@ public struct ManagedPresentation<Root: View>: View {
           model.levels.append(PresentationLevel())
         }
 
-        // Update all destinations with latest path
-        for (index, destination) in manager.path.enumerated() {
-          model.levels[index].destination = destination
-        }
+        let destinations = manager.path
 
-        // Clear ongoing operations
-        model.levels.forEach { $0.operations = [] }
+        // Only update destinations on levels with no in-flight operations.
+        // Levels with active operations use snapshot-assigned destinations.
+        model.updateIdleDestinations(from: destinations)
 
-        // Set all dismiss and present, by checking only navigationID to avoid
-        // closing and reopening a sheet/fullScreenCover when only other data changed
-        let old = old.map { AnyHashable(($0.base as! any NavigationDestination).navigationID) }
-        let new = new.map { AnyHashable(($0.base as! any NavigationDestination).navigationID) }
-        let prefixLength = zip(old, new).prefix(while: { $0 == $1 }).count
-        for index in prefixLength..<old.count {
-          model.levels[index].operations.append(.dismiss)
+        // Build snapshot of navigationIDs and enqueue
+        let navigationIDs = new.map {
+          AnyHashable(($0.base as! any NavigationDestination).navigationID)
         }
-        for index in prefixLength..<new.count {
-          model.levels[index].operations.append(.present)
-        }
+        model.enqueueSnapshot(.init(navigationIDs: navigationIDs, destinations: destinations))
       }
       .backgroundPreferenceValue(PresentationPreferenceKey.self) { presentations in
         PresentationBody(
-          manager: $manager,
           presentations: presentations,
           level: model.levels[0],
           depth: 0,
@@ -106,10 +97,10 @@ public struct ManagedPresentation<Root: View>: View {
 
 private struct PresentationBody: View {
   @Environment(PresentationModel.self) private var model
-
+  @Environment(\.navigator) private var navigator
+  
   @State private var isPresented = false
   @State private var storedDestination: (any NavigationDestination)?
-  @Binding var manager: NavigationManager
 
   var presentations: [AnyHashable: PresentationData]
   var level: PresentationLevel
@@ -134,10 +125,25 @@ private struct PresentationBody: View {
       .onChange(of: model.operations) { _, operations in
         guard !shouldWaitForOtherOperations else { return }
         if operations[depth]?.contains(.dismiss) == true {
+          // Don't dismiss while UIKit is still animating a present.
+          guard !level.isPresenting else { return }
           isPresented = false
         } else if operations[depth]?.contains(.present) == true {
+          // Don't re-execute a present that's already in progress.
+          // The onChange can re-fire due to eager destination updates on
+          // the model, even though the operations haven't actually changed.
+          guard !level.isPresenting else { return }
+          level.isPresenting = true
           isPresented = true
           storedDestination = destination
+        }
+      }
+      .onChange(of: level.isPresenting) { _, isTransitioning in
+        // When a present transition finishes, retry any pending dismiss.
+        if !isTransitioning,
+           level.operations.contains(.dismiss),
+           !shouldWaitForOtherOperations {
+          isPresented = false
         }
       }
       .sheet(
@@ -185,9 +191,9 @@ private struct PresentationBody: View {
 
     // User swipe-to-dismiss while idle — sync the manager.
     if depth == 0 {
-      manager.popToRoot()
+      navigator?.popToRoot()
     } else {
-      manager.popTo(at: depth - 1)
+      navigator?.popTo(at: depth - 1)
     }
   }
 
@@ -215,17 +221,18 @@ private struct PresentationBody: View {
     .backgroundPreferenceValue(PresentationPreferenceKey.self) {
       let nextDepth = depth + 1
       PresentationBody(
-        manager: $manager,
         presentations: presentations.merging($0) { $1 },
         level: model.levels.indices.contains(nextDepth) ? model.levels[nextDepth] : .init(),
         depth: nextDepth,
       )
       .environment(model)
     }
-    .environment(\.navigator, $manager)
+    .environment(\.navigator, navigator)
     .background {
       OnPresentedNotifier {
+        level.isPresenting = false
         level.operations.removeAll { $0 == .present }
+        model.onOperationCompleted()
       } onDismissed: {
         level.operations.removeAll { $0 == .dismiss }
         // Only clear the destination if no new present is pending.
@@ -234,6 +241,7 @@ private struct PresentationBody: View {
         if !level.operations.contains(.present) {
           storedDestination = nil
         }
+        model.onOperationCompleted()
       }
       .frame(width: 0, height: 0)
       .allowsHitTesting(false)
@@ -247,14 +255,32 @@ private class PresentationLevel {
     case present
     case dismiss
   }
-  
+
   var destination: (any NavigationDestination)?
   var operations: [Operation] = []
+
+  /// `true` while UIKit is animating a present transition for this level.
+  /// Set when `isPresented` becomes `true`, cleared when `onPresented` fires.
+  var isPresenting = false
 }
 
 @Observable
 private class PresentationModel {
+  struct Snapshot {
+    let navigationIDs: [AnyHashable]
+    let destinations: [any NavigationDestination]
+  }
+
   var levels: [PresentationLevel] = [.init()]
+
+  /// The navigationID array that the UI has fully animated to.
+  private var confirmedNavigationIDs: [AnyHashable] = []
+
+  /// The snapshot currently being processed, or nil if idle.
+  private var activeSnapshot: Snapshot?
+
+  /// Pending snapshots waiting to be processed (collapsed to at most one).
+  private var pendingSnapshots: [Snapshot] = []
 
   var operations: [Int: [PresentationLevel.Operation]] {
     var dict = [Int: [PresentationLevel.Operation]](minimumCapacity: levels.count)
@@ -262,5 +288,77 @@ private class PresentationModel {
       dict[offset] = level.operations
     }
     return dict
+  }
+
+  var allOperationsComplete: Bool {
+    levels.allSatisfy { $0.operations.isEmpty }
+  }
+
+  /// Updates destinations on levels that have no in-flight operations.
+  /// Levels that are part of an active snapshot keep their snapshot-assigned
+  /// destinations until those operations complete.
+  func updateIdleDestinations(from path: [any NavigationDestination]) {
+    for (index, destination) in path.enumerated() where index < levels.count {
+      if levels[index].operations.isEmpty {
+        levels[index].destination = destination
+      }
+    }
+  }
+
+  func enqueueSnapshot(_ snapshot: Snapshot) {
+    if activeSnapshot == nil {
+      processSnapshot(snapshot)
+    } else {
+      // Collapse: only keep the latest pending snapshot.
+      // This would discard intermediate snapshot that didn't start and jump
+      // straight to the final result.
+      pendingSnapshots = [snapshot]
+    }
+  }
+
+  func onOperationCompleted() {
+    guard activeSnapshot != nil, allOperationsComplete else { return }
+    confirmAndAdvance()
+  }
+
+  private func processSnapshot(_ snapshot: Snapshot) {
+    activeSnapshot = snapshot
+
+    levels.forEach { $0.operations = [] }
+
+    let old = confirmedNavigationIDs
+    let new = snapshot.navigationIDs
+    let prefixLength = zip(old, new).prefix(while: { $0 == $1 }).count
+
+    // Set destinations from the snapshot for levels that will be presented.
+    for index in prefixLength..<new.count {
+      levels[index].destination = snapshot.destinations[index]
+      levels[index].operations.append(.present)
+    }
+
+    for index in prefixLength..<old.count {
+      levels[index].operations.append(.dismiss)
+    }
+
+    // Update idle levels (shared prefix) with latest destination data.
+    for index in 0..<prefixLength {
+      levels[index].destination = snapshot.destinations[index]
+    }
+
+    if allOperationsComplete {
+      confirmAndAdvance()
+    }
+  }
+
+  private func confirmAndAdvance() {
+    if let active = activeSnapshot {
+      confirmedNavigationIDs = active.navigationIDs
+    }
+    activeSnapshot = nil
+
+    if let next = pendingSnapshots.first {
+      pendingSnapshots.removeFirst()
+      processSnapshot(next)
+    }
   }
 }
