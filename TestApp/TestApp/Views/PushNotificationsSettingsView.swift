@@ -5,6 +5,7 @@ struct PushNotificationsSettingsView: View {
   @Environment(\.navigator) private var navigator
   
   var id: String
+  var isEnabled: Bool
   
   @State private var pushEnabled = true
   @State private var soundEnabled = true
@@ -24,64 +25,68 @@ struct PushNotificationsSettingsView: View {
           .listRowBackground(Color.clear)
       }
       
-      // MARK: - ID
-      Section {
-        HStack {
-          Text("Destination ID")
-          Spacer()
-          Text(id)
-            .font(.caption.monospaced())
-            .foregroundStyle(.secondary)
-            .lineLimit(1)
-            .truncationMode(.middle)
+      Group {
+        // MARK: - ID
+        Section {
+          HStack {
+            Text("Destination ID")
+            Spacer()
+            Text(id)
+              .font(.caption.monospaced())
+              .foregroundStyle(.secondary)
+              .lineLimit(1)
+              .truncationMode(.middle)
+          }
         }
-      }
-      
-      // MARK: - General
-      Section("General") {
-        Toggle("Push Notifications", isOn: $pushEnabled)
-        Toggle("Sounds", isOn: $soundEnabled)
+        
+        // MARK: - General
+        Section("General") {
+          Toggle("Push Notifications", isOn: $pushEnabled)
+          Toggle("Sounds", isOn: $soundEnabled)
+            .disabled(!pushEnabled)
+          Toggle("Badge Count", isOn: $badgesEnabled)
+            .disabled(!pushEnabled)
+          Picker("Preview Style", selection: $previewStyle) {
+            ForEach(previewStyles, id: \.self) { Text($0) }
+          }
           .disabled(!pushEnabled)
-        Toggle("Badge Count", isOn: $badgesEnabled)
-          .disabled(!pushEnabled)
-        Picker("Preview Style", selection: $previewStyle) {
-          ForEach(previewStyles, id: \.self) { Text($0) }
         }
-        .disabled(!pushEnabled)
-      }
-      
-      // MARK: - Quiet Hours
-      Section("Quiet Hours") {
-        DatePicker("From", selection: $quietHoursStart, displayedComponents: .hourAndMinute)
-        DatePicker("Until", selection: $quietHoursEnd, displayedComponents: .hourAndMinute)
-      }
-      
-      // MARK: - Categories
-      Section("Categories") {
-        NotificationCategoryRow(icon: "envelope.fill", title: "Messages", color: .blue, enabled: true)
-        NotificationCategoryRow(icon: "heart.fill", title: "Social", color: .pink, enabled: true)
-        NotificationCategoryRow(icon: "cart.fill", title: "Purchases", color: .green, enabled: false)
-        NotificationCategoryRow(icon: "megaphone.fill", title: "Marketing", color: .orange, enabled: false)
-      }
-      
-      // MARK: - State Restoration
-      Section("State Restoration") {
-        StateRestorationGrid()
-          .listRowInsets(EdgeInsets())
-          .listRowBackground(Color.clear)
-      }
-      
-      // MARK: - Actions
-      Section {
-        Button("Pop to Settings") {
-          navigator?.popTo(SettingsDestination.self)
+        
+        // MARK: - Quiet Hours
+        Section("Quiet Hours") {
+          DatePicker("From", selection: $quietHoursStart, displayedComponents: .hourAndMinute)
+          DatePicker("Until", selection: $quietHoursEnd, displayedComponents: .hourAndMinute)
         }
-        Button("Pop to Root") {
-          navigator?.popToRoot()
+        
+        // MARK: - Categories
+        Section("Categories") {
+          NotificationCategoryRow(icon: "envelope.fill", title: "Messages", color: .blue, enabled: true)
+          NotificationCategoryRow(icon: "heart.fill", title: "Social", color: .pink, enabled: true)
+          NotificationCategoryRow(icon: "cart.fill", title: "Purchases", color: .green, enabled: false)
+          NotificationCategoryRow(icon: "megaphone.fill", title: "Marketing", color: .orange, enabled: false)
+        }
+        
+        // MARK: - State Restoration
+        Section("State Restoration") {
+          StateRestorationGrid()
+            .listRowInsets(EdgeInsets())
+            .listRowBackground(Color.clear)
+        }
+        
+        // MARK: - Actions
+        Section {
+          Button("Pop to Settings") {
+            navigator?.popTo(SettingsDestination.self)
+          }
+          Button("Pop to Root") {
+            navigator?.popToRoot()
+          }
         }
       }
+      .disabled(!isEnabled)
     }
     .navigationTitle("Notifications")
+    .macOSModifiers()
   }
 }
 

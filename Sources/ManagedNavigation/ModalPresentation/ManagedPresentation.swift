@@ -1,6 +1,11 @@
 import SwiftUI
 import Observation
 
+#if DEBUG
+import OSLog
+private let logger = Logger(subsystem: "ManagedNavigation", category: "ManagedPresentation")
+#endif
+
 /// A container view that manages modal presentations driven by a ``NavigationManager``.
 ///
 /// `ManagedPresentation` works like ``ManagedNavigationStack`` but for modal
@@ -63,42 +68,21 @@ public struct ManagedPresentation<Root: View>: View {
     root
       .onChange(
         of: manager.path.map { AnyHashable($0) },
-        initial: true
-      ) { old, new in
-        // Create all necessary levels
-        let needed = max(old.count, new.count)
-        while model.levels.count < needed {
-          model.levels.append(PresentationLevel())
-        }
-
-        let destinations = manager.path
-
-        // Only update destinations on levels with no in-flight operations.
-        // Levels with active operations use snapshot-assigned destinations.
-        model.updateIdleDestinations(from: destinations)
-
-        // Build snapshot of navigationIDs and enqueue
-        let navigationIDs = new.map {
-          AnyHashable(($0.base as! any NavigationDestination).navigationID)
-        }
-        model.enqueueSnapshot(.init(navigationIDs: navigationIDs, destinations: destinations))
-      }
+        initial: true,
+        model.onPathChange
+      )
       .backgroundPreferenceValue(PresentationPreferenceKey.self) { presentations in
-        PresentationBody(
-          presentations: presentations,
-          level: model.levels[0],
-          depth: 0,
-        )
-        .environment(model)
+        LevelResolver(presentations: presentations, depth: 0)
+          .environment(model)
       }
       .environment(\.navigator, $manager)
   }
 }
 
 private struct PresentationBody: View {
-  @Environment(PresentationModel.self) private var model
   @Environment(\.navigator) private var navigator
-  
+  @Environment(PresentationModel.self) var model
+
   @State private var isPresented = false
   @State private var storedDestination: (any NavigationDestination)?
 
@@ -108,42 +92,24 @@ private struct PresentationBody: View {
 
   var destination: (any NavigationDestination)? { level.destination }
 
-  var shouldWaitForOtherOperations: Bool {
-    if level.operations.contains(.dismiss) {
-      model.operations.contains { $0.key < depth && $0.value.contains(.dismiss) }
-    } else if level.operations.contains(.present) {
-      model.operations.contains { $0.value.contains(.dismiss) }
-    } else {
-      false
-    }
-  }
-
   var body: some View {
     Color.clear
       .frame(width: 0, height: 0)
       .allowsHitTesting(false)
-      .onChange(of: model.operations) { _, operations in
-        guard !shouldWaitForOtherOperations else { return }
-        if operations[depth]?.contains(.dismiss) == true {
-          // Don't dismiss while UIKit is still animating a present.
-          guard !level.isPresenting else { return }
-          isPresented = false
-        } else if operations[depth]?.contains(.present) == true {
-          // Don't re-execute a present that's already in progress.
-          // The onChange can re-fire due to eager destination updates on
-          // the model, even though the operations haven't actually changed.
-          guard !level.isPresenting else { return }
-          level.isPresenting = true
+      .onChange(of: level.operation, initial: true) { _, operation in
+        switch operation {
+        case .present:
           isPresented = true
           storedDestination = destination
-        }
-      }
-      .onChange(of: level.isPresenting) { _, isTransitioning in
-        // When a present transition finishes, retry any pending dismiss.
-        if !isTransitioning,
-           level.operations.contains(.dismiss),
-           !shouldWaitForOtherOperations {
-          isPresented = false
+        case .dismiss:
+          if isPresented {
+            isPresented = false
+          } else {
+            // Sheet was already dismissed by UIKit (user swipe).
+            // No animation will happen, so complete immediately.
+            model.onOperationCompleted(of: level)
+          }
+        case .none: break
         }
       }
       .sheet(
@@ -153,11 +119,11 @@ private struct PresentationBody: View {
         content
       }
       .onChange(of: destination.map { AnyHashable($0) }) {
-        if isPresented, !shouldWaitForOtherOperations,
+        if isPresented,
            let destination,
-           let navID = storedDestination?.navigationID,
-           AnyHashable(navID) == AnyHashable(destination.navigationID) {
-          storedDestination = destination
+           let storedDestination,
+           destination.matchesDestination(storedDestination) {
+          self.storedDestination = destination
         }
       }
 #if !os(macOS)
@@ -211,57 +177,96 @@ private struct PresentationBody: View {
 
   @ViewBuilder private var content: some View {
     Group {
-      if let destination = storedDestination, let data = presentationData(for: destination) {
-        AnyView(data.view(destination, depth))
+      if let storedDestination, let data = presentationData(for: destination) {
+        AnyView(data.view(storedDestination, depth))
       } else {
         Image(systemName: "exclamationmark.triangle.fill")
           .foregroundStyle(.yellow)
+        #if DEBUG
+          .onAppear {
+            if let storedDestination {
+              logger.fault("No destination registered for \(String(describing: storedDestination.navigationID)). Use sheet(for:content:) or fullScreenCover(for:content:) to register a destination.")
+            }
+          }
+        #endif
+        #if os(macOS)
+          .frame(maxWidth: .infinity, maxHeight: .infinity)
+          .background(.background)
+          .onTapGesture {
+            navigator?.pop()
+          }
+        #endif
       }
     }
     .backgroundPreferenceValue(PresentationPreferenceKey.self) {
-      let nextDepth = depth + 1
-      PresentationBody(
+      LevelResolver(
         presentations: presentations.merging($0) { $1 },
-        level: model.levels.indices.contains(nextDepth) ? model.levels[nextDepth] : .init(),
-        depth: nextDepth,
+        depth: depth + 1
       )
-      .environment(model)
     }
     .environment(\.navigator, navigator)
     .background {
-      OnPresentedNotifier {
-        level.isPresenting = false
-        level.operations.removeAll { $0 == .present }
-        model.onOperationCompleted()
-      } onDismissed: {
-        level.operations.removeAll { $0 == .dismiss }
-        // Only clear the destination if no new present is pending.
-        // A rapid dismiss→present sequence can cause onDismissed to fire
-        // after the new present was already set up.
-        if !level.operations.contains(.present) {
-          storedDestination = nil
-        }
-        model.onOperationCompleted()
+      Notifier(level: level) {
+        storedDestination = nil
       }
-      .frame(width: 0, height: 0)
-      .allowsHitTesting(false)
     }
+  }
+}
+
+private struct LevelResolver: View {
+  @Environment(PresentationModel.self) var model
+  var presentations: [AnyHashable: PresentationData]
+  var depth: Int
+  
+  var body: some View {
+    PresentationBody(
+      presentations: presentations,
+      level: model.levels.indices.contains(depth) ? model.levels[depth] : .init(),
+      depth: depth,
+    )
+  }
+}
+
+private struct Notifier: View {
+  @Environment(PresentationModel.self) var model
+  var level: PresentationLevel
+  var clearDestination: () -> Void
+  
+  var body: some View {
+    OnPresentedNotifier {
+      model.onOperationCompleted(of: level)
+    } onDismissed: {
+      // Only clear the destination if no new present is pending.
+      // A rapid dismiss→present sequence can cause onDismissed to fire
+      // after the new present was already set up.
+      if !level.operations.contains(.present) {
+        clearDestination()
+      }
+      
+      model.onOperationCompleted(of: level)
+    }
+    .frame(width: 0, height: 0)
+    .allowsHitTesting(false)
   }
 }
 
 @Observable
 private class PresentationLevel {
-  enum Operation: Equatable {
+  enum Operation: CustomStringConvertible {
     case present
     case dismiss
+
+    var description: String {
+      switch self {
+      case .present: "present"
+      case .dismiss: "dismiss"
+      }
+    }
   }
 
   var destination: (any NavigationDestination)?
   var operations: [Operation] = []
-
-  /// `true` while UIKit is animating a present transition for this level.
-  /// Set when `isPresented` becomes `true`, cleared when `onPresented` fires.
-  var isPresenting = false
+  var operation: Operation?
 }
 
 @Observable
@@ -277,36 +282,49 @@ private class PresentationModel {
   private var confirmedNavigationIDs: [AnyHashable] = []
 
   /// The snapshot currently being processed, or nil if idle.
-  private var activeSnapshot: Snapshot?
+  private var processingSnapshot: Snapshot?
 
   /// Pending snapshots waiting to be processed (collapsed to at most one).
   private var pendingSnapshots: [Snapshot] = []
 
-  var operations: [Int: [PresentationLevel.Operation]] {
-    var dict = [Int: [PresentationLevel.Operation]](minimumCapacity: levels.count)
-    for (offset, level) in levels.enumerated() {
-      dict[offset] = level.operations
+  func onPathChange(old: [AnyHashable], new: [AnyHashable]) {
+    // Create all necessary levels
+    let needed = max(old.count, new.count)
+    while levels.count < needed {
+      levels.append(PresentationLevel())
     }
-    return dict
-  }
 
-  var allOperationsComplete: Bool {
-    levels.allSatisfy { $0.operations.isEmpty }
-  }
+    let destinations = new.map { $0.base as! any NavigationDestination }
 
+    // Only update destinations on levels with no in-flight operations.
+    // Levels with active operations use snapshot-assigned destinations.
+    updateIdleDestinations(from: destinations)
+
+    // Build snapshot of navigationIDs and enqueue
+    let navigationIDs = destinations.map { AnyHashable($0.navigationID) }
+    
+    enqueueSnapshot(.init(navigationIDs: navigationIDs, destinations: destinations))
+  }
+  
   /// Updates destinations on levels that have no in-flight operations.
   /// Levels that are part of an active snapshot keep their snapshot-assigned
   /// destinations until those operations complete.
   func updateIdleDestinations(from path: [any NavigationDestination]) {
     for (index, destination) in path.enumerated() where index < levels.count {
       if levels[index].operations.isEmpty {
-        levels[index].destination = destination
+        if let existing = levels[index].destination {
+          if !existing.equalsDestination(destination) {
+            levels[index].destination = destination
+          }
+        } else {
+          levels[index].destination = destination
+        }
       }
     }
   }
 
   func enqueueSnapshot(_ snapshot: Snapshot) {
-    if activeSnapshot == nil {
+    if processingSnapshot == nil {
       processSnapshot(snapshot)
     } else {
       // Collapse: only keep the latest pending snapshot.
@@ -316,15 +334,16 @@ private class PresentationModel {
     }
   }
 
-  func onOperationCompleted() {
-    guard activeSnapshot != nil, allOperationsComplete else { return }
-    confirmAndAdvance()
+  func onOperationCompleted(of level: PresentationLevel) {
+    if let currentOperation = level.operation {
+      level.operations.removeAll { $0 == currentOperation }
+      level.operation = nil
+      executeNextOperation()
+    }
   }
 
   private func processSnapshot(_ snapshot: Snapshot) {
-    activeSnapshot = snapshot
-
-    levels.forEach { $0.operations = [] }
+    processingSnapshot = snapshot
 
     let old = confirmedNavigationIDs
     let new = snapshot.navigationIDs
@@ -336,25 +355,42 @@ private class PresentationModel {
       levels[index].operations.append(.present)
     }
 
-    for index in prefixLength..<old.count {
-      levels[index].operations.append(.dismiss)
+    if prefixLength < old.count {
+      levels[prefixLength].operations.append(.dismiss)
     }
 
     // Update idle levels (shared prefix) with latest destination data.
     for index in 0..<prefixLength {
-      levels[index].destination = snapshot.destinations[index]
+      let new = snapshot.destinations[index]
+      if let existing = levels[index].destination {
+        if !existing.equalsDestination(new) {
+          levels[index].destination = new
+        }
+      } else {
+        levels[index].destination = new
+      }
     }
 
-    if allOperationsComplete {
+    executeNextOperation()
+  }
+  
+  private func executeNextOperation() {
+    if let firstDismiss = levels.first(where: { $0.operations.contains(.dismiss) && $0.operation == nil }) {
+      let idx = levels.firstIndex(where: { $0 === firstDismiss }) ?? -1
+      firstDismiss.operation = .dismiss
+    } else if let first = levels.first(where: { $0.operations.contains(.present) && $0.operation == nil }) {
+      let idx = levels.firstIndex(where: { $0 === first }) ?? -1
+      first.operation = .present
+    } else {
       confirmAndAdvance()
     }
   }
 
   private func confirmAndAdvance() {
-    if let active = activeSnapshot {
-      confirmedNavigationIDs = active.navigationIDs
+    if let snapshot = processingSnapshot {
+      confirmedNavigationIDs = snapshot.navigationIDs
     }
-    activeSnapshot = nil
+    processingSnapshot = nil
 
     if let next = pendingSnapshots.first {
       pendingSnapshots.removeFirst()

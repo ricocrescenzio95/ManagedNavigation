@@ -10,7 +10,7 @@ struct NavigationStackExample: View {
   
   var body: some View {
     ManagedNavigationStack(manager: $manager) {
-      HomeView(title: "Navigation Stack")
+      HomeView(title: "Navigation Stack", showClose: false)
       .navigationDestination(for: SettingsDestination.self) { _ in
         SettingsView()
       }
@@ -18,7 +18,7 @@ struct NavigationStackExample: View {
         ProfileView()
       }
       .navigationDestination(for: HomeViewDestination.self) { _ in
-        HomeView(title: "Navigation Stack")
+        HomeView(title: "Navigation Stack", showClose: false)
       }
       .navigationDestination(for: AccountDestination.self) { _ in
         AccountView()

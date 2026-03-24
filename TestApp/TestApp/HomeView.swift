@@ -8,6 +8,7 @@ struct HomeView: View {
   @State private var searchText = ""
   
   var title: String
+  var showClose: Bool
   
   private var filteredCategories: [Category] {
     if searchText.isEmpty { return categories }
@@ -90,6 +91,7 @@ struct HomeView: View {
     }
     .searchable(text: $searchText, prompt: "Search items...")
     .navigationTitle(title)
+    .macOSModifiers(showClose: showClose)
   }
 }
 

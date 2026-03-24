@@ -92,6 +92,7 @@ struct ProfileView: View {
         withAnimation { isEditing.toggle() }
       }
     }
+    .macOSModifiers()
   }
 }
 

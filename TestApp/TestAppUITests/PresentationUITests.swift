@@ -9,7 +9,30 @@ final class PresentationUITests: XCTestCase {
     app.launch()
 
     // Navigate to the Presentation tab
+    #if os(macOS)
+    app.radioButtons["Presentation"].tap()
+    #else
     app.tabBars.buttons["Presentation"].tap()
+    #endif
+  }
+
+  /// Checks whether a navigation title is visible.
+  /// On iOS this queries `navigationBars`, on macOS it falls back to `staticTexts`.
+  private func navigationTitleExists(_ title: String, timeout: TimeInterval = 5) -> Bool {
+    #if os(macOS)
+    return app.staticTexts[title].waitForExistence(timeout: timeout)
+    #else
+    return app.navigationBars[title].waitForExistence(timeout: timeout)
+    #endif
+  }
+  
+  private func dismissCurrentView() {
+    #if os(macOS)
+    // The macOSModifiers modifier adds a toolbar button with .cancellationAction placement.
+    app.buttons["Close"].tap()
+    #else
+    app.swipeDown(velocity: .fast)
+    #endif
   }
 
   // MARK: - Single push/dismiss
@@ -20,11 +43,10 @@ final class PresentationUITests: XCTestCase {
     settingsButton.tap()
 
     // Verify the Settings sheet appeared
-    let settingsTitle = app.navigationBars["Settings"]
-    XCTAssertTrue(settingsTitle.waitForExistence(timeout: 5))
+    XCTAssertTrue(navigationTitleExists("Settings"))
 
     // Swipe down to dismiss
-    app.swipeDown(velocity: .fast)
+    dismissCurrentView()
 
     // Verify we're back to the root
     XCTAssertTrue(settingsButton.waitForExistence(timeout: 5))
@@ -41,17 +63,16 @@ final class PresentationUITests: XCTestCase {
 
     // First push
     settingsButton.tap()
-    let settingsTitle = app.navigationBars["Settings"]
-    XCTAssertTrue(settingsTitle.waitForExistence(timeout: 5))
+    XCTAssertTrue(navigationTitleExists("Settings"))
 
     // Swipe down to dismiss
-    app.swipeDown(velocity: .fast)
+    dismissCurrentView()
 
     // Immediately push again (may overlap with dismiss animation)
     sleep(UInt32(0)) // yield to let dismiss start
     if settingsButton.waitForExistence(timeout: 3) {
       settingsButton.tap()
-      XCTAssertTrue(settingsTitle.waitForExistence(timeout: 5),
+      XCTAssertTrue(navigationTitleExists("Settings"),
                      "Settings sheet should re-appear after rapid dismiss+push")
     }
   }
@@ -67,15 +88,15 @@ final class PresentationUITests: XCTestCase {
 
     // Push Settings
     settingsButton.tap()
-    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5))
+    XCTAssertTrue(navigationTitleExists("Settings"))
 
     // Dismiss
-    app.swipeDown(velocity: .fast)
+    dismissCurrentView()
 
     // Wait briefly then push Profile
     if profileButton.waitForExistence(timeout: 3) {
       profileButton.tap()
-      XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 5),
+      XCTAssertTrue(navigationTitleExists("Profile"),
                      "Profile sheet should appear after dismissing Settings")
     }
   }
@@ -110,11 +131,11 @@ final class PresentationUITests: XCTestCase {
     pushAllButton.tap()
 
     // The first sheet (Settings) should appear
-    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 5),
+    XCTAssertTrue(navigationTitleExists("Settings"),
                    "First sheet (Settings) should appear from batch push")
 
     // The second sheet (Profile) should appear on top
-    XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 10),
+    XCTAssertTrue(navigationTitleExists("Profile", timeout: 10),
                    "Second sheet (Profile) should appear on top of Settings")
   }
 
@@ -129,8 +150,8 @@ final class PresentationUITests: XCTestCase {
     for _ in 0..<3 {
       settingsButton.tap()
 
-      if app.navigationBars["Settings"].waitForExistence(timeout: 5) {
-        app.swipeDown(velocity: .fast)
+      if navigationTitleExists("Settings") {
+        dismissCurrentView()
         // Small delay to let animation start but not finish
         usleep(150_000) // 300ms
       }
@@ -175,7 +196,7 @@ final class PresentationUITests: XCTestCase {
 
     // The final state is [Settings]. Wait for all animations to settle.
     // Settings should be the visible sheet.
-    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 15),
+    XCTAssertTrue(navigationTitleExists("Settings", timeout: 15),
                    "Settings sheet should be visible as final state of sequence 1")
   }
 
@@ -190,7 +211,7 @@ final class PresentationUITests: XCTestCase {
                    "Sequence 2 should complete")
 
     // Final state is [Account]
-    XCTAssertTrue(app.navigationBars["Account"].waitForExistence(timeout: 15),
+    XCTAssertTrue(navigationTitleExists("Account", timeout: 15),
                    "Account sheet should be visible as final state of sequence 2")
   }
 
@@ -206,7 +227,7 @@ final class PresentationUITests: XCTestCase {
                    "Sequence 3 should complete")
 
     // The topmost sheet should be Account
-    XCTAssertTrue(app.navigationBars["Account"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Account", timeout: 20),
                    "Account sheet should be visible as topmost of sequence 3")
   }
 
@@ -222,7 +243,7 @@ final class PresentationUITests: XCTestCase {
                    "Sequence 4 should complete")
 
     // The topmost sheet should be Settings
-    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Settings", timeout: 20),
                    "Settings sheet should be visible as topmost of sequence 4")
   }
 
@@ -237,7 +258,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-5"),
                    "Sequence 5 should complete")
 
-    XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Profile", timeout: 20),
                    "Profile sheet should be visible as final state of sequence 5")
   }
 
@@ -253,7 +274,7 @@ final class PresentationUITests: XCTestCase {
 
     // After all pops, root should be reachable — check navigation bar title
     // (push-settings button may be scrolled off screen)
-    XCTAssertTrue(app.navigationBars["Presentation"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Presentation", timeout: 20),
                    "Root view should be accessible after rapid pops")
   }
 
@@ -269,7 +290,7 @@ final class PresentationUITests: XCTestCase {
                    "Sequence 7 should complete")
 
     // Settings should still be visible (never dismissed)
-    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 10),
+    XCTAssertTrue(navigationTitleExists("Settings", timeout: 10),
                    "Settings sheet should remain visible after data-only replace")
   }
 
@@ -284,7 +305,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-8"),
                    "Sequence 8 should complete")
 
-    XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Profile", timeout: 20),
                    "Profile sheet should be visible as final state of sequence 8")
   }
 
@@ -299,7 +320,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-9"),
                    "Sequence 9 should complete")
 
-    XCTAssertTrue(app.navigationBars["Account"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Account", timeout: 20),
                    "Account should be visible as final state of sequence 9")
   }
 
@@ -314,7 +335,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-10"),
                    "Sequence 10 should complete")
 
-    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Settings", timeout: 20),
                    "Settings should be visible as final state of sequence 10 (partial pop)")
   }
 
@@ -330,7 +351,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-11"),
                    "Sequence 11 should complete")
 
-    XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Profile", timeout: 20),
                    "Profile should be visible as final state of sequence 11 (immediate replace)")
   }
 
@@ -345,7 +366,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-12"),
                    "Sequence 12 should complete")
 
-    XCTAssertTrue(app.navigationBars["Account"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Account", timeout: 20),
                    "Account should be visible as topmost of sequence 12 (pop then push)")
   }
 
@@ -360,7 +381,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-13"),
                    "Sequence 13 should complete")
 
-    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Settings", timeout: 20),
                    "Settings should be visible as final state of sequence 13 (double popToRoot on empty)")
   }
 
@@ -375,7 +396,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-14"),
                    "Sequence 14 should complete")
 
-    XCTAssertTrue(app.navigationBars["Account"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Account", timeout: 20),
                    "Account should be visible as final state of sequence 14 (interleaved push-pop)")
   }
 
@@ -390,7 +411,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-15"),
                    "Sequence 15 should complete")
 
-    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Settings", timeout: 20),
                    "Settings should be visible as final state of sequence 15 (popTo by type)")
   }
 
@@ -405,7 +426,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-16"),
                    "Sequence 16 should complete")
 
-    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Settings", timeout: 20),
                    "Settings should be visible as topmost of sequence 16 (replace full path)")
   }
 
@@ -420,7 +441,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-17"),
                    "Sequence 17 should complete")
 
-    XCTAssertTrue(app.navigationBars["Settings"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Settings", timeout: 20),
                    "Settings should be visible as final state of sequence 17 (duplicate navigationID)")
   }
 
@@ -435,7 +456,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-18"),
                    "Sequence 18 should complete")
 
-    XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Profile", timeout: 20),
                    "Profile should be visible as topmost of sequence 18 (pop during present)")
   }
 
@@ -450,7 +471,7 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(waitForStatus("done-19"),
                    "Sequence 19 should complete")
 
-    XCTAssertTrue(app.navigationBars["Profile"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Profile", timeout: 20),
                    "Profile should be visible as final state of sequence 19 (recycled levels)")
   }
 
@@ -467,7 +488,7 @@ final class PresentationUITests: XCTestCase {
                    "Sequence 20 should complete")
 
     // The PushNotificationsSettingsView has navigationTitle "Notifications"
-    XCTAssertTrue(app.navigationBars["Notifications"].waitForExistence(timeout: 20),
+    XCTAssertTrue(navigationTitleExists("Notifications", timeout: 20),
                    "Notifications should be visible as topmost of sequence 20 (deep registration)")
 
     // Verify the id was updated to "bbb" — PushNotificationsSettingsView shows the id in a Text view.

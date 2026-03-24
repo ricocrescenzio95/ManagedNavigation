@@ -3,6 +3,7 @@ import ManagedNavigation
 
 struct AccountView: View {
   @Environment(\.navigator) private var navigator
+  @Environment(\.dismiss) var dismiss
   
   var body: some View {
     ScrollView {
@@ -86,7 +87,7 @@ struct AccountView: View {
           .buttonStyle(.bordered)
           
           Button("Dismiss") {
-            navigator?.pop()
+            dismiss()
           }
           .buttonStyle(.bordered)
           .tint(.red)
@@ -97,6 +98,7 @@ struct AccountView: View {
       }
     }
     .navigationTitle("Account")
+    .macOSModifiers()
   }
 }
 

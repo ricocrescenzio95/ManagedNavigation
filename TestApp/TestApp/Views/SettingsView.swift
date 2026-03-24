@@ -36,7 +36,6 @@ struct SettingsView: View {
         Button("Push Notification Settings") {
           navigator?.push(PushNotificationsSettingsDestination(id: UUID().uuidString))
         }
-        .disabled(!notificationsEnabled)
       }
       
       // MARK: - Storage
@@ -97,14 +96,21 @@ struct SettingsView: View {
         }
       }
     }
-    .navigationTitle("Settings")
     .sheet(for: PushNotificationsSettingsDestination.self) { context in
       NavigationStack {
-        PushNotificationsSettingsView(id: context.destination.id)
+        PushNotificationsSettingsView(id: context.destination.id, isEnabled: notificationsEnabled)
+          .task {
+            try? await Task.sleep(for: .seconds(2))
+            notificationsEnabled = false
+            try? await Task.sleep(for: .seconds(2))
+            navigator?.replace(PushNotificationsSettingsDestination(id: "changed"), at: context.index)
+          }
       }
     }
     .navigationDestination(for: PushNotificationsSettingsDestination.self) {
-      PushNotificationsSettingsView(id: $0.id)
+      PushNotificationsSettingsView(id: $0.id, isEnabled: notificationsEnabled)
     }
+    .navigationTitle("Settings")
+    .macOSModifiers()
   }
 }

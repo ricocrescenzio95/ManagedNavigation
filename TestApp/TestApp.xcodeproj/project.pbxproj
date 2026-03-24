@@ -22,6 +22,7 @@
 
 /* Begin PBXFileReference section */
 		1F6586402F6C74E800764132 /* TestAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TestAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		1F65867C2F6EF4C000764132 /* TestApp.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestApp.xctestplan; sourceTree = "<group>"; };
 		1FF6313F2F6AEE8600EE6A75 /* TestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -60,6 +61,7 @@
 		1FF631362F6AEE8600EE6A75 = {
 			isa = PBXGroup;
 			children = (
+				1F65867C2F6EF4C000764132 /* TestApp.xctestplan */,
 				1FF631412F6AEE8600EE6A75 /* TestApp */,
 				1F6586412F6C74E800764132 /* TestAppUITests */,
 				1FF631402F6AEE8600EE6A75 /* Products */,

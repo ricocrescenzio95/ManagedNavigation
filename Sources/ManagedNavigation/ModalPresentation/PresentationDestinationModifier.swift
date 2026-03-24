@@ -1,7 +1,9 @@
 import SwiftUI
-import OSLog
 
+#if DEBUG
+import OSLog
 private let logger = Logger(subsystem: "ManagedNavigation", category: "PresentationModifier")
+#endif
 
 struct PresentationData {
   enum PresentationType {

@@ -7,7 +7,7 @@ struct PresentationExample: View {
   var body: some View {
     ManagedPresentation(manager: $manager) {
       NavigationStack {
-        HomeView(title: "Presentation")
+        HomeView(title: "Presentation", showClose: false)
       }
       .sheet(for: SettingsDestination.self) { _ in
         NavigationStack {
@@ -21,7 +21,7 @@ struct PresentationExample: View {
       }
       .sheet(for: HomeViewDestination.self) { _ in
         NavigationStack {
-          HomeView(title: "Presentation")
+          HomeView(title: "Presentation", showClose: true)
         }
       }
       #if os(macOS)
