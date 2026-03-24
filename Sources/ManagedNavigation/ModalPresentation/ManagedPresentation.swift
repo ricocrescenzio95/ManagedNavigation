@@ -137,8 +137,8 @@ private struct PresentationBody: View {
   }
 
   private func isPresented(for presentationType: PresentationData.PresentationType) -> Bool {
-    guard let destination = storedDestination else { return false }
-    let effectiveType = presentationData(for: destination)?.presentationType ?? .sheet
+    guard let storedDestination else { return false }
+    let effectiveType = presentationData(for: storedDestination)?.presentationType ?? .sheet
     return effectiveType == presentationType && isPresented
   }
 
@@ -177,7 +177,7 @@ private struct PresentationBody: View {
 
   @ViewBuilder private var content: some View {
     Group {
-      if let storedDestination, let data = presentationData(for: destination) {
+      if let storedDestination, let data = presentationData(for: storedDestination) {
         AnyView(data.view(storedDestination, depth))
       } else {
         Image(systemName: "exclamationmark.triangle.fill")
