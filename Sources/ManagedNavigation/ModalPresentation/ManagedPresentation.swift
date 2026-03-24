@@ -43,6 +43,9 @@ private let logger = Logger(subsystem: "ManagedNavigation", category: "ManagedPr
 /// ``SwiftUICore/EnvironmentValues/navigator`` environment value.
 public struct ManagedPresentation<Root: View>: View {
   @State private var model = PresentationModel()
+  
+  // Use StateObject to ensure single instance when creating in init
+  @StateObject private var navigator: Navigator
 
   @Binding var manager: NavigationManager
 
@@ -61,6 +64,7 @@ public struct ManagedPresentation<Root: View>: View {
     @ViewBuilder root: () -> Root
   ) {
     _manager = manager
+    _navigator = StateObject(wrappedValue: Navigator(manager))
     self.root = root()
   }
 
@@ -68,14 +72,16 @@ public struct ManagedPresentation<Root: View>: View {
     root
       .onChange(
         of: manager.path.map { AnyHashable($0) },
-        initial: true,
-        model.onPathChange
-      )
+        initial: true
+      ) { old, new in
+        model.onPathChange(old: old, new: new)
+        navigator.syncPath()
+      }
       .backgroundPreferenceValue(PresentationPreferenceKey.self) { presentations in
         LevelResolver(presentations: presentations, depth: 0)
           .environment(model)
       }
-      .environment(\.navigator, $manager)
+      .environment(\.navigator, navigator)
   }
 }
 
@@ -190,7 +196,6 @@ private struct PresentationBody: View {
         depth: depth + 1
       )
     }
-    .environment(\.navigator, navigator)
     .background {
       OperationCompletedObserver(level: level, storedDestination: $storedDestination)
     }

@@ -22,11 +22,15 @@ import SwiftUI
 /// ```
 ///
 /// Child views can access the navigation stack through the ``SwiftUICore/EnvironmentValues/navigator``
-/// environment value, which provides a ``NavigationProxy``.
+/// environment value, which provides a ``Navigator``.
 public struct ManagedNavigationStack<Root: View>: View {
   @Binding var manager: NavigationManager
-  var root: Root
   
+  // Use StateObject to ensure single instance when creating in init
+  @StateObject private var navigator: Navigator
+
+  var root: Root
+
   /// Creates a managed navigation stack.
   ///
   /// - Parameters:
@@ -37,13 +41,17 @@ public struct ManagedNavigationStack<Root: View>: View {
     @ViewBuilder root: () -> Root
   ) {
     _manager = manager
+    _navigator = StateObject(wrappedValue: Navigator(manager))
     self.root = root()
   }
-  
+
   public var body: some View {
     NavigationStack(path: $manager._path) {
       root
     }
-    .environment(\.navigator, $manager)
+    .environment(\.navigator, navigator)
+    .onChange(of: manager.path.map { AnyHashable($0) }, initial: true) {
+      navigator.syncPath()
+    }
   }
 }
