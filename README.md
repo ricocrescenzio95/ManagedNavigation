@@ -1,5 +1,3 @@
-> **⚠️ WORK IN PROGRESS — This library is under active development and is not yet ready for production use. APIs may change without notice.**
-
 <p align="center">
 <img src="./Sources/ManagedNavigation/ManagedNavigation.docc/Resources/app-icon@3x.png" width="200">
 </p>
