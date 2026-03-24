@@ -1,6 +1,6 @@
 import SwiftUI
 
-struct OnPresentedNotifier {
+struct PresentationNotifier {
   var onPresented: () -> Void
   var onDismissed: () -> Void
 }
@@ -8,7 +8,7 @@ struct OnPresentedNotifier {
 #if canImport(UIKit)
 import UIKit
 
-extension OnPresentedNotifier: UIViewControllerRepresentable {
+extension PresentationNotifier: UIViewControllerRepresentable {
   func makeUIViewController(context: Context) -> PresentedDetectorVC {
     PresentedDetectorVC(onPresented: onPresented, onDismissed: onDismissed)
   }
@@ -52,7 +52,7 @@ extension OnPresentedNotifier: UIViewControllerRepresentable {
 #elseif canImport(AppKit)
 import AppKit
 
-extension OnPresentedNotifier: NSViewControllerRepresentable {
+extension PresentationNotifier: NSViewControllerRepresentable {
   func makeNSViewController(context: Context) -> PresentedDetectorVC {
     PresentedDetectorVC(onPresented: onPresented, onDismissed: onDismissed)
   }

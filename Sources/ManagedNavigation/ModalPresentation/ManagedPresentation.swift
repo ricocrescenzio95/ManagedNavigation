@@ -97,20 +97,12 @@ private struct PresentationBody: View {
       .frame(width: 0, height: 0)
       .allowsHitTesting(false)
       .onChange(of: level.operation, initial: true) { _, operation in
-        switch operation {
-        case .present:
-          isPresented = true
-          storedDestination = destination
-        case .dismiss:
-          if isPresented {
-            isPresented = false
-          } else {
-            // Sheet was already dismissed by UIKit (user swipe).
-            // No animation will happen, so complete immediately.
-            model.onOperationCompleted(of: level)
-          }
-        case .none: break
-        }
+      .background {
+        OperationObserver(
+          level: level,
+          isPresented: $isPresented,
+          storedDestination: $storedDestination
+        )
       }
       .sheet(
         isPresented: .init(get: { isPresented(for: .sheet) }, set: { setPresented($0) }),
@@ -206,9 +198,7 @@ private struct PresentationBody: View {
     }
     .environment(\.navigator, navigator)
     .background {
-      Notifier(level: level) {
-        storedDestination = nil
-      }
+      OperationCompletedObserver(level: level, storedDestination: $storedDestination)
     }
   }
 }
@@ -227,26 +217,56 @@ private struct LevelResolver: View {
   }
 }
 
-private struct Notifier: View {
+private struct OperationCompletedObserver: View {
   @Environment(PresentationModel.self) var model
   var level: PresentationLevel
-  var clearDestination: () -> Void
+  @Binding var storedDestination: (any NavigationDestination)?
   
   var body: some View {
-    OnPresentedNotifier {
+    PresentationNotifier {
       model.onOperationCompleted(of: level)
     } onDismissed: {
       // Only clear the destination if no new present is pending.
       // A rapid dismiss→present sequence can cause onDismissed to fire
       // after the new present was already set up.
       if !level.operations.contains(.present) {
-        clearDestination()
+        storedDestination = nil
       }
       
       model.onOperationCompleted(of: level)
     }
     .frame(width: 0, height: 0)
     .allowsHitTesting(false)
+  }
+}
+
+private struct OperationObserver: View {
+  @Environment(PresentationModel.self) var model
+
+  var level: PresentationLevel
+  @Binding var isPresented: Bool
+  @Binding var storedDestination: (any NavigationDestination)?
+
+  var body: some View {
+    Color.clear
+      .frame(width: 0, height: 0)
+      .allowsHitTesting(false)
+      .onChange(of: level.operation, initial: true) { _, operation in
+        switch operation {
+        case .present:
+          isPresented = true
+          storedDestination = level.destination
+        case .dismiss:
+          if isPresented {
+            isPresented = false
+          } else {
+            // Sheet was already dismissed by UIKit (user swipe).
+            // No animation will happen, so complete immediately.
+            model.onOperationCompleted(of: level)
+          }
+        case .none: break
+        }
+      }
   }
 }
 
