@@ -93,38 +93,32 @@ private struct PresentationBody: View {
   var destination: (any NavigationDestination)? { level.destination }
 
   var body: some View {
-    Color.clear
-      .frame(width: 0, height: 0)
-      .allowsHitTesting(false)
-      .onChange(of: level.operation, initial: true) { _, operation in
-      .background {
-        OperationObserver(
-          level: level,
-          isPresented: $isPresented,
-          storedDestination: $storedDestination
-        )
+    OperationObserver(
+      level: level,
+      isPresented: $isPresented,
+      storedDestination: $storedDestination
+    )
+    .sheet(
+      isPresented: .init(get: { isPresented(for: .sheet) }, set: { setPresented($0) }),
+      onDismiss: { storedDestination.flatMap { onDismiss?($0, depth) } }
+    ) {
+      content
+    }
+    .onChange(of: destination.map { AnyHashable($0) }) {
+      if isPresented,
+         let destination,
+         let storedDestination,
+         destination.matchesDestination(storedDestination) {
+        self.storedDestination = destination
       }
-      .sheet(
-        isPresented: .init(get: { isPresented(for: .sheet) }, set: { setPresented($0) }),
-        onDismiss: { storedDestination.flatMap { onDismiss?($0, depth) } }
-      ) {
-        content
-      }
-      .onChange(of: destination.map { AnyHashable($0) }) {
-        if isPresented,
-           let destination,
-           let storedDestination,
-           destination.matchesDestination(storedDestination) {
-          self.storedDestination = destination
-        }
-      }
+    }
 #if !os(macOS)
-      .fullScreenCover(
-        isPresented: .init(get: { isPresented(for: .fullScreenCover) }, set: { setPresented($0) }),
-        onDismiss: { storedDestination.flatMap { onDismiss?($0, depth) } }
-      ) {
-        content
-      }
+    .fullScreenCover(
+      isPresented: .init(get: { isPresented(for: .fullScreenCover) }, set: { setPresented($0) }),
+      onDismiss: { storedDestination.flatMap { onDismiss?($0, depth) } }
+    ) {
+      content
+    }
 #endif
   }
 
