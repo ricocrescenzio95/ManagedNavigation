@@ -50,6 +50,7 @@ struct NavigationBreadcrumbs: View {
             .tint(isLast ? .accentColor : .secondary)
           }
         }
+        .font(.caption2)
         .frame(height: 40)
         .padding(.horizontal)
       }
