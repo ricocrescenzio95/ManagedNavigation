@@ -12,7 +12,7 @@ views, and accessing navigation from child views.
 
 Conform a struct to ``NavigationDestination`` to make it a valid destination.
 The protocol inherits from `Hashable` and provides a
-``NavigationDestination/navigationID`` for identifying destination kinds.
+``NavigationDestination/id`` for identifying destination kinds.
 
 ```swift
 import ManagedNavigation
@@ -26,12 +26,12 @@ struct DetailsDestination: NavigationDestination {
 }
 ```
 
-The default ``NavigationDestination/navigationID`` is the type name as a
+The default ``NavigationDestination/id`` is the type name as a
 `String`. You can customize it if needed:
 
 ```swift
 struct SettingsDestination: NavigationDestination {
-    static var navigationID: String { "settings" }
+    static var id: String { "settings" }
 }
 ```
 
@@ -115,7 +115,7 @@ you don't need it.
 
 Child views inside a ``ManagedNavigationStack`` can access the navigation
 through the ``SwiftUICore/EnvironmentValues/navigator`` environment value, which
-provides a ``NavigationProxy``:
+provides a ``Navigator``:
 
 ```swift
 struct HomeView: View {
@@ -129,7 +129,7 @@ struct HomeView: View {
 }
 ```
 
-``NavigationProxy`` exposes the same push and pop methods as
+``Navigator`` exposes the same push and pop methods as
 ``NavigationManager``.
 
 ## Inspect the Navigation Stack
@@ -161,12 +161,12 @@ manager.popTo(where: { context in
 })
 ```
 
-You can also inspect the ``NavigationManager/NavigationScanContext/destinationID``
-to identify destination kinds without casting:
+You can also use ``NavigationDestination/navigationID`` to identify
+destination kinds without casting:
 
 ```swift
 manager.popTo(where: { context in
-    context.destinationID == "HomeDestination"
+    context.destination.matchesID("HomeDestination")
 })
 ```
 ## Present Sheets and Full-Screen Covers

@@ -39,7 +39,7 @@ private let logger = Logger(subsystem: "ManagedNavigation", category: "ManagedPr
 /// same type (same `navigationID`) but different data, the presented view
 /// updates in place without a dismiss/present cycle.
 ///
-/// Child views can access the navigation manager through the
+/// Child views can access the navigator through the
 /// ``SwiftUICore/EnvironmentValues/navigator`` environment value.
 public struct ManagedPresentation<Root: View>: View {
   @State private var model = PresentationModel()

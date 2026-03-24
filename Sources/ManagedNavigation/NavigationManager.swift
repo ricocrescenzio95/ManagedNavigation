@@ -167,7 +167,7 @@ public struct NavigationManager {
   ///
   /// ```swift
   /// manager.popTo(where: { context in
-  ///     context.isType(HomeDestination.self) && context.index > 0
+  ///     context.destination is HomeDestination && context.index > 0
   /// })
   /// ```
   ///
@@ -299,12 +299,11 @@ extension NavigationManager {
   /// Context provided to predicate-based navigation methods like ``popTo(where:)``.
   ///
   /// A `NavigationScanContext` gives you access to the full navigation path,
-  /// the index being evaluated, and convenience methods for inspecting
-  /// the destination at that index.
+  /// the index being evaluated, and the destination at that index.
   ///
   /// ```swift
   /// manager.popTo(where: { context in
-  ///     context.isType(DetailsDestination.self)
+  ///     context.destination is DetailsDestination
   /// })
   /// ```
   public struct NavigationScanContext {

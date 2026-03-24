@@ -5,20 +5,20 @@
 /// ``NavigationManager``. The protocol inherits from `Hashable`, so your
 /// types must also satisfy that requirement.
 ///
-/// Every conforming type has a ``navigationID`` that uniquely identifies the
+/// Every conforming type has an ``id`` that uniquely identifies the
 /// destination *kind*. The default implementation returns the type name as a
 /// `String`:
 ///
 /// ```swift
 /// struct HomeDestination: NavigationDestination {}
-/// // HomeDestination.navigationID == "HomeDestination"
+/// // HomeDestination.id == "HomeDestination"
 /// ```
 ///
 /// You can provide a custom value when you need stable identifiers:
 ///
 /// ```swift
 /// struct SettingsDestination: NavigationDestination {
-///     static var navigationID: String { "settings" }
+///     static var id: String { "settings" }
 /// }
 /// ```
 public protocol NavigationDestination: Hashable {

@@ -21,8 +21,8 @@ import SwiftUI
 /// }
 /// ```
 ///
-/// Child views can access the navigation stack through the ``SwiftUICore/EnvironmentValues/navigator``
-/// environment value, which provides a ``Navigator``.
+/// Child views can access the navigator through the
+/// ``SwiftUICore/EnvironmentValues/navigator`` environment value.
 public struct ManagedNavigationStack<Root: View>: View {
   @Binding var manager: NavigationManager
   

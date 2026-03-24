@@ -13,9 +13,9 @@ Key features:
 
 - **Protocol-based destinations** — Conform your types to
   ``NavigationDestination``. Each destination type gets a
-  ``NavigationDestination/navigationID`` for identification.
+  ``NavigationDestination/id`` for identification.
 - **Programmatic navigation** — Push and pop destinations from anywhere using
-  ``NavigationManager`` or the ``NavigationProxy`` environment value.
+  ``NavigationManager`` or the ``Navigator`` environment value.
 - **Rich pop operations** — Pop to a specific type, index, or use a custom
   predicate with ``NavigationManager/NavigationScanContext``.
 - **Batch push** — Push multiple destinations in a single call.
@@ -67,7 +67,7 @@ ManagedNavigationStack(manager: $manager) {
 
 ### Navigating from Child Views
 
-- ``NavigationProxy``
+- ``Navigator``
 - ``SwiftUICore/EnvironmentValues/navigator``
 
 ### Inspecting the Stack

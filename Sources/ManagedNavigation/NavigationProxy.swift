@@ -1,22 +1,11 @@
 import SwiftUI
 import Observation
 
-/// A stable reference wrapper around a ``NavigationManager`` binding.
+/// An observable object that provides programmatic navigation from any child view.
 ///
-/// `Navigator` is an `@Observable` reference type that holds a
-/// `Binding<NavigationManager>` internally.  Because it is a class its
-/// identity stays the same across SwiftUI view updates, which prevents
-/// unnecessary view invalidation when passed through the environment.
-///
-/// The ``path`` property **is** tracked by Observation, so views that
-/// read it (e.g. breadcrumbs, badges) will update when the navigation
-/// stack changes.  Views that only *call* mutation methods like
-/// ``push(_:)-(NavigationDestination)`` or ``pop()`` without reading ``path`` in their
-/// `body` will **not** be invalidated.
-///
-/// You don't create a `Navigator` yourself.  ``ManagedNavigationStack``
+/// You don't create a `Navigator` yourself. ``ManagedNavigationStack``
 /// and ``ManagedPresentation`` inject one into the environment
-/// automatically.  Access it from any child view with:
+/// automatically. Access it with:
 ///
 /// ```swift
 /// @Environment(\.navigator) private var navigator
@@ -29,14 +18,10 @@ import Observation
 public class Navigator: ObservableObject {
   // MARK: - Internal storage
 
-  /// The binding that connects back to the owning @State NavigationManager.
-  /// Ignored by Observation so that reading/writing it does not trigger
-  /// view invalidation on its own.
   @ObservationIgnored
   var binding: Binding<NavigationManager>
 
-  /// The current navigation path.  This **is** tracked by Observation,
-  /// so any view that reads it in its `body` will update when it changes.
+  /// The current navigation path.
   public internal(set) var path: [any NavigationDestination] = []
 
   // MARK: - Init
@@ -46,8 +31,7 @@ public class Navigator: ObservableObject {
     self.path = binding.wrappedValue.path
   }
 
-  /// Syncs the observable ``path`` with the current manager state.
-  /// Called by the owning container view when the manager's path changes.
+  /// Syncs ``path`` with the current manager state.
   func syncPath() {
     let managerPath = binding.wrappedValue.path
     // Only assign if actually different to avoid unnecessary observation notifications.

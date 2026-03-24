@@ -170,7 +170,7 @@ if let data = UserDefaults.standard.data(forKey: "savedPath"),
 }
 ```
 
-### Navigation Proxy
+### Navigator
 
 Child views can access navigation through the environment without any coupling to the manager:
 
