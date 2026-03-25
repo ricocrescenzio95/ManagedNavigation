@@ -92,7 +92,7 @@ private struct PresentationBody: View {
   @State private var isPresented = false
   @State private var storedDestination: (any NavigationDestination)?
 
-  var presentations: [AnyHashable: PresentationData]
+  var presentations: [ObjectIdentifier: PresentationData]
   var level: PresentationLevel
   var depth: Int
 
@@ -161,7 +161,7 @@ private struct PresentationBody: View {
 
   private func presentationData(for destination: (any NavigationDestination)?) -> PresentationData? {
     if let destination {
-      presentations[AnyHashable(destination.navigationID)]
+      presentations[destination.navigationID]
     } else {
       nil
     }
@@ -204,7 +204,7 @@ private struct PresentationBody: View {
 
 private struct LevelResolver: View {
   @Environment(PresentationModel.self) var model
-  var presentations: [AnyHashable: PresentationData]
+  var presentations: [ObjectIdentifier: PresentationData]
   var depth: Int
   
   var body: some View {
@@ -395,10 +395,8 @@ private class PresentationModel {
   
   private func executeNextOperation() {
     if let firstDismiss = levels.first(where: { $0.operations.contains(.dismiss) && $0.operation == nil }) {
-      let idx = levels.firstIndex(where: { $0 === firstDismiss }) ?? -1
       firstDismiss.operation = .dismiss
     } else if let first = levels.first(where: { $0.operations.contains(.present) && $0.operation == nil }) {
-      let idx = levels.firstIndex(where: { $0 === first }) ?? -1
       first.operation = .present
     } else {
       confirmAndAdvance()

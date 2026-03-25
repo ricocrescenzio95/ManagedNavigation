@@ -6,55 +6,16 @@
 /// types must also satisfy that requirement.
 ///
 /// Every conforming type has an ``id`` that uniquely identifies the
-/// destination *kind*. The default implementation returns the type name as a
-/// `String`:
+/// destination *kind*. The default implementation returns the
+/// `ObjectIdentifier` of the type itself:
 ///
 /// ```swift
 /// struct HomeDestination: NavigationDestination {}
-/// // HomeDestination.id == "HomeDestination"
+/// // HomeDestination.id == ObjectIdentifier(HomeDestination.self)
 /// ```
-///
-/// You can provide a custom value when you need stable identifiers:
-///
-/// ```swift
-/// struct SettingsDestination: NavigationDestination {
-///     static var id: String { "settings" }
-/// }
-/// ```
-public protocol NavigationDestination: Hashable {
-  associatedtype NavigationID: Hashable = String
-  
-  /// An hashable that uniquely identifies this destination kind.
-  static var id: NavigationID { get }
-}
+public protocol NavigationDestination: Hashable {}
 
 extension NavigationDestination {
-  /// An hashable that uniquely identifies this destination kind.
-  public var navigationID: NavigationID { Self.id }
-  
-  /// The concrete type of this destination.
-  public var type: Self.Type { Self.self }
-  
-  /// Returns `true` when this destination's ``navigationID`` equals the given value.
-  ///
-  /// Use this to compare a destination against a raw identifier without
-  /// needing a concrete `NavigationDestination` instance:
-  ///
-  /// ```swift
-  /// if destination.matchesID("settings") { … }
-  /// ```
-  ///
-  /// - Parameter id: A hashable value to compare against this destination's ``navigationID``.
-  /// - Returns: `true` if `id` can be cast to ``NavigationID`` and is equal
-  ///   to this destination's ``navigationID``; otherwise `false`.
-  public func matchesID(_ id: some Hashable) -> Bool {
-    if let id = id as? NavigationID {
-      navigationID == id
-    } else {
-      false
-    }
-  }
-  
   /// Returns `true` when the given destination is the same type and has a
   /// matching ``navigationID``.
   ///
@@ -75,12 +36,8 @@ extension NavigationDestination {
   /// - Parameter other: Another navigation destination to compare against.
   /// - Returns: `true` if `other` is the same type as `Self` and shares the
   ///   same ``navigationID``; otherwise `false`.
-  public func matchesDestination(_ other: some NavigationDestination) -> Bool {
-    if let other = other as? Self {
-      navigationID == other.navigationID
-    } else {
-      false
-    }
+  public func matchesDestination<Other: NavigationDestination>(_ other: Other) -> Bool {
+    Self.id == Other.id
   }
   
   /// Returns `true` when the given destination is the same type and is
@@ -108,7 +65,10 @@ extension NavigationDestination {
   }
 }
 
-extension NavigationDestination where NavigationID == String {
-  /// The default navigation ID, derived from the type name.
-  public static var id: String { String(describing: Self.self) }
+extension NavigationDestination {
+  /// The default navigation ID, derived from the `ObjectIdentifier` of the type.
+  public static var id: ObjectIdentifier { ObjectIdentifier(Self.self) }
+  
+  /// A hashable value that uniquely identifies this destination kind.
+  public var navigationID: ObjectIdentifier { Self.id }
 }

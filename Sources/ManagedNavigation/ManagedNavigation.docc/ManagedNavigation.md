@@ -5,9 +5,10 @@ Programmatic, type-safe navigation for SwiftUI apps.
 ![AppIcon](app-icon)
 
 ManagedNavigation provides a thin layer on top of SwiftUI's `NavigationStack`
-that gives you full programmatic control over the navigation path. Instead of
-relying solely on `NavigationLink`, you can push, pop, and inspect destinations
-using a centralized ``NavigationManager``.
+and modal presentations that gives you full programmatic control over push
+navigation, sheets, and full-screen covers. Instead of relying on
+`NavigationLink` or managing separate `@State` booleans for each modal, you
+drive everything through a centralized ``NavigationManager``.
 
 Key features:
 
@@ -39,7 +40,7 @@ struct DetailsDestination: NavigationDestination {
 // 2. Create a NavigationManager
 @State var manager = NavigationManager()
 
-// 3. Wrap your root view
+// 3a. Push navigation
 ManagedNavigationStack(manager: $manager) {
     Button("Go to Details") {
         manager.push(DetailsDestination(id: "abc"))
@@ -49,6 +50,16 @@ ManagedNavigationStack(manager: $manager) {
     }
     .navigationDestination(for: DetailsDestination.self) {
         DetailsView(id: $0.id)
+    }
+}
+
+// 3b. Modal presentations
+ManagedPresentation(manager: $manager) {
+    Button("Open Settings") {
+        manager.push(SettingsDestination())
+    }
+    .sheet(for: SettingsDestination.self) { context in
+        SettingsView()
     }
 }
 ```
@@ -78,6 +89,7 @@ ManagedNavigationStack(manager: $manager) {
 ### Modal Presentations
 
 - ``ManagedPresentation``
+- ``PresentationContext``
 - ``SwiftUICore/View/sheet(for:onDismiss:content:)``
 - ``SwiftUICore/View/fullScreenCover(for:onDismiss:content:)``
 

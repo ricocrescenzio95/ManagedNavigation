@@ -16,7 +16,7 @@ struct PresentationData {
 }
 
 struct PresentationPreferenceKey: PreferenceKey {
-  typealias Value = [AnyHashable: PresentationData]
+  typealias Value = [ObjectIdentifier: PresentationData]
   
   static var defaultValue: Value { .init() }
   
@@ -47,7 +47,7 @@ private struct PresentationDestinationModifier<D: NavigationDestination, C: View
   func body(content: Content) -> some View {
     content
       .transformPreference(PresentationPreferenceKey.self) { value in
-        value[AnyHashable(data.id)] = .init(
+        value[data.id] = .init(
           view: { viewContent(.init(destination: $0 as! D, index: $1)) },
           presentationType: presentationType,
           onDismiss: { onDismiss?(.init(destination: $0 as! D, index: $1)) }

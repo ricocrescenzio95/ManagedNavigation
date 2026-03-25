@@ -26,14 +26,8 @@ struct DetailsDestination: NavigationDestination {
 }
 ```
 
-The default ``NavigationDestination/id`` is the type name as a
-`String`. You can customize it if needed:
-
-```swift
-struct SettingsDestination: NavigationDestination {
-    static var id: String { "settings" }
-}
-```
+The default ``NavigationDestination/id`` is the `ObjectIdentifier` of the
+type itself, which guarantees uniqueness across modules.
 
 ## Set Up the Navigation Stack
 
@@ -161,12 +155,12 @@ manager.popTo(where: { context in
 })
 ```
 
-You can also use ``NavigationDestination/navigationID`` to identify
-destination kinds without casting:
+You can also use ``NavigationDestination/matchesDestination(_:)`` to check
+whether two destinations are the same kind without casting:
 
 ```swift
 manager.popTo(where: { context in
-    context.destination.matchesID("HomeDestination")
+    context.destination.matchesDestination(HomeDestination())
 })
 ```
 ## Present Sheets and Full-Screen Covers

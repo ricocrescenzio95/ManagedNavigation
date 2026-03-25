@@ -318,8 +318,8 @@ struct NavigationScanContextTests {
     let path: [any NavigationDestination] = [TestHome(), TestDetails(id: "abc")]
     let homeContext = NavigationManager.NavigationScanContext(path: path, index: 0)
     let detailsContext = NavigationManager.NavigationScanContext(path: path, index: 1)
-    #expect(homeContext.destination.matchesID("TestHome"))
-    #expect(detailsContext.destination.matchesID("TestDetails"))
+    #expect(homeContext.destination.navigationID == ObjectIdentifier(TestHome.self))
+    #expect(detailsContext.destination.navigationID == ObjectIdentifier(TestDetails.self))
   }
 }
 
@@ -458,52 +458,11 @@ struct PathSyncTests {
 
 @Suite("NavigationDestination")
 struct NavigationDestinationTests {
-  @Test("navigationID returns type name by default")
+  @Test("navigationID returns Object Identfier of Self by default")
   func defaultNavigationID() {
-    #expect(TestHome.id == "TestHome")
-    #expect(TestDetails.id == "TestDetails")
-    #expect(TestSettings.id == "TestSettings")
-  }
-
-  @Test("Instance navigationID matches static navigationID")
-  func instanceNavigationID() {
-    let destination = TestDetails(id: "abc")
-    #expect(destination.matchesID(TestDetails.id))
-  }
-
-  @Test("type property returns Self.self")
-  func typeProperty() {
-    let destination = TestDetails(id: "abc")
-    #expect(destination.type == TestDetails.self)
-  }
-}
-
-// MARK: - matchesID
-
-@Suite("matchesID")
-struct MatchesIDTests {
-  @Test("Returns true for matching NavigationID")
-  func matchingID() {
-    let destination = TestHome()
-    #expect(destination.matchesID("TestHome"))
-  }
-
-  @Test("Returns false for non-matching NavigationID")
-  func nonMatchingID() {
-    let destination = TestHome()
-    #expect(!destination.matchesID("TestDetails"))
-  }
-
-  @Test("Returns false when the Hashable type cannot be cast to NavigationID")
-  func incompatibleType() {
-    let destination = TestHome()
-    #expect(!destination.matchesID(42))
-  }
-
-  @Test("Matches against the static id value")
-  func matchesStaticID() {
-    let destination = TestDetails(id: "abc")
-    #expect(destination.matchesID(TestDetails.id))
+    #expect(TestHome.id == ObjectIdentifier(TestHome.self))
+    #expect(TestDetails.id == ObjectIdentifier(TestDetails.self))
+    #expect(TestSettings.id == ObjectIdentifier(TestSettings.self))
   }
 }
 
@@ -732,12 +691,5 @@ struct NavigationScanContextAdditionalTests {
     let path: [any NavigationDestination] = [TestHome(), TestDetails(id: "a")]
     let context = NavigationManager.NavigationScanContext(path: path, index: 1)
     #expect(context.index == 1)
-  }
-
-  @Test("destinationID matches type's navigationID")
-  func destinationIDMatchesType() {
-    let path: [any NavigationDestination] = [TestDetails(id: "abc")]
-    let context = NavigationManager.NavigationScanContext(path: path, index: 0)
-    #expect(context.destination.matchesID(TestDetails.id))
   }
 }
