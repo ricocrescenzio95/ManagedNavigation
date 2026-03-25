@@ -497,4 +497,83 @@ final class PresentationUITests: XCTestCase {
     XCTAssertTrue(idText.waitForExistence(timeout: 10),
                    "The destination id should have been updated to 'bbb' via data-only replace")
   }
+
+  // MARK: - Transaction / Animation control tests
+
+  /// Sequence 21: withoutAnimation { push(Settings) } — cold start
+  /// The presentation should appear without animation on the very first push.
+  /// Expected final: [Settings]
+  func testStressSequence21_PushWithoutAnimation() {
+    scrollToStressTests()
+
+    app.buttons["stress-sequence-21"].tap()
+
+    XCTAssertTrue(waitForStatus("done-21"),
+                   "Sequence 21 should complete")
+
+    XCTAssertTrue(navigationTitleExists("Settings", timeout: 10),
+                   "Settings should be visible after no-animation push")
+  }
+
+  /// Sequence 22: push(Settings) → wait → withoutAnimation { popToRoot }
+  /// The dismiss should happen without animation.
+  /// Expected final: [] (root)
+  func testStressSequence22_DismissWithoutAnimation() {
+    scrollToStressTests()
+
+    app.buttons["stress-sequence-22"].tap()
+
+    XCTAssertTrue(waitForStatus("done-22"),
+                   "Sequence 22 should complete")
+
+    // Root should be accessible — check the Presentation nav title
+    XCTAssertTrue(navigationTitleExists("Presentation", timeout: 10),
+                   "Root view should be accessible after no-animation dismiss")
+  }
+
+  /// Sequence 23: withoutAnimation { push(Settings) } → pop → push(Profile) with animation
+  /// Verifies the transaction flag resets: first push has no animation, second push animates normally.
+  /// Expected final: [Profile]
+  func testStressSequence23_NoAnimThenAnimatedPush() {
+    scrollToStressTests()
+
+    app.buttons["stress-sequence-23"].tap()
+
+    XCTAssertTrue(waitForStatus("done-23"),
+                   "Sequence 23 should complete")
+
+    XCTAssertTrue(navigationTitleExists("Profile", timeout: 15),
+                   "Profile should be visible as final state of sequence 23 (animated push after no-anim)")
+  }
+
+  /// Sequence 24: withoutAnimation { push([Settings, Profile, Account]) }
+  /// Batch push of 3 destinations all without animation.
+  /// Expected final: [Settings, Profile, Account] — Account on top.
+  func testStressSequence24_BatchPushWithoutAnimation() {
+    scrollToStressTests()
+
+    app.buttons["stress-sequence-24"].tap()
+
+    XCTAssertTrue(waitForStatus("done-24"),
+                   "Sequence 24 should complete")
+
+    XCTAssertTrue(navigationTitleExists("Account", timeout: 20),
+                   "Account should be visible as topmost of sequence 24 (batch push without animation)")
+  }
+
+  /// Sequence 25: noAnim push(S) → noAnim pop → animated push(P) → noAnim push(A)
+  /// Alternates between animated and non-animated operations. Verifies the transaction
+  /// flag is correctly set and reset for each individual operation.
+  /// Expected final: [Profile, Account] — Account on top.
+  func testStressSequence25_MixedAnimatedAndNoAnim() {
+    scrollToStressTests()
+
+    app.buttons["stress-sequence-25"].tap()
+
+    XCTAssertTrue(waitForStatus("done-25"),
+                   "Sequence 25 should complete")
+
+    XCTAssertTrue(navigationTitleExists("Account", timeout: 20),
+                   "Account should be visible as topmost of sequence 25 (mixed animated/noAnim)")
+  }
 }

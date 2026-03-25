@@ -32,6 +32,8 @@ struct HomeView: View {
           )
         }
         
+        Divider()
+        
         // MARK: - Category Sections
         ForEach(filteredCategories) { category in
           Section {
@@ -51,6 +53,8 @@ struct HomeView: View {
               description: "Tap any item to push its destination onto the navigation path."
             )
           }
+          
+          Divider()
         }
         
         // MARK: - State Restoration
@@ -64,6 +68,8 @@ struct HomeView: View {
           )
         }
         
+        Divider()
+        
         // MARK: - Batch Push
         Section {
           BatchPushBuilder()
@@ -74,6 +80,8 @@ struct HomeView: View {
             description: "Select destinations and push them all at once."
           )
         }
+        
+        Divider()
 
         // MARK: - Stress Tests
         Section {
@@ -164,7 +172,7 @@ private struct SectionHeader: View {
       }
       .padding(.horizontal)
       .padding(.vertical, 8)
-      .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 8))
+      .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 12))
       .padding(.horizontal, 8)
     }
   }
@@ -203,7 +211,7 @@ private struct CategoryItemCard: View {
 }
 
 private struct DestinationOption: Identifiable {
-  let id: String
+  var id: String
   let label: String
   let icon: String
   let color: Color
@@ -220,14 +228,19 @@ private let availableDestinations: [DestinationOption] = [
 
 private struct BatchPushBuilder: View {
   @Environment(\.navigator) private var navigator
+  @State private var animationsEnabled = true
   @State private var selected: [DestinationOption] = []
   
   var body: some View {
     VStack(alignment: .leading, spacing: 12) {
-      // Available destinations as tappable chips
+      Toggle(isOn: $animationsEnabled) {
+        Text("Enable animations")
+      }
       FlowLayout(spacing: 8) {
         ForEach(availableDestinations) { option in
           Button {
+            var option = option
+            option.id = UUID().uuidString
             selected.append(option)
           } label: {
             Label(option.label, systemImage: option.icon)
@@ -250,7 +263,7 @@ private struct BatchPushBuilder: View {
           
           ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 6) {
-              ForEach(Array(selected.enumerated()), id: \.offset) { index, option in
+              ForEach(Array(selected.enumerated()), id: \.element.id) { index, option in
                 HStack(spacing: 4) {
                   Image(systemName: option.icon)
                     .font(.caption2)
@@ -277,14 +290,21 @@ private struct BatchPushBuilder: View {
       HStack(spacing: 12) {
         Button {
           let destinations = selected.map { $0.make() }
-          navigator?.push(destinations)
+          if animationsEnabled {
+            navigator?.push(destinations)
+          } else {
+            navigator?.withoutAnimation {
+              $0.push(destinations)
+            }
+          }
           selected.removeAll()
         } label: {
           Label("Push All", systemImage: "arrow.right.circle.fill")
-            .font(.caption.bold())
+            .bold()
             .frame(maxWidth: .infinity)
         }
-        .buttonStyle(.borderedProminent)
+        .tint(.green)
+        .buttonStyle(.glass)
         .buttonBorderShape(.capsule)
         .disabled(selected.isEmpty)
         
@@ -292,14 +312,16 @@ private struct BatchPushBuilder: View {
           selected.removeAll()
         } label: {
           Label("Clear", systemImage: "trash")
-            .font(.caption.bold())
         }
-        .buttonStyle(.bordered)
+        .tint(.red)
+        .buttonStyle(.glass)
         .buttonBorderShape(.capsule)
         .disabled(selected.isEmpty)
       }
     }
     .padding(.horizontal)
+    .geometryGroup()
+    .animation(.spring, value: selected.count)
   }
 }
 
@@ -386,7 +408,7 @@ private struct StressTestRow: View {
           }
         }
 
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: 4) {
           Text(sequence.title)
             .font(.subheadline.bold())
           Text(sequence.description)
@@ -396,14 +418,14 @@ private struct StressTestRow: View {
             .font(.caption2)
             .foregroundStyle(.tertiary)
         }
+        .multilineTextAlignment(.leading)
 
         Spacer()
       }
-      .padding(.vertical, 6)
-      .padding(.horizontal, 10)
-      .background(.fill.quinary, in: .rect(cornerRadius: 10))
+      .padding(6)
     }
-    .buttonStyle(.plain)
+    .buttonBorderShape(.roundedRectangle(radius: 12))
+    .buttonStyle(.glass)
     .disabled(isRunning)
     .accessibilityIdentifier("stress-sequence-\(sequence.id)")
   }
@@ -476,6 +498,21 @@ private struct StressTestButtons: View {
     (20, "Deep Registration Data Update",
      "push([Settings, PushNotifications(aaa)]) → replace PushNotifications(bbb) at: 1",
      "[Settings, Notifications] with updated id"),
+    (21, "Push Without Animation",
+     "withoutAnimation { push(Settings) } — cold start",
+     "[Settings] (no animation)"),
+    (22, "Dismiss Without Animation",
+     "push(Settings) → wait → withoutAnimation { popToRoot }",
+     "[] (root, no dismiss animation)"),
+    (23, "No Anim→Dismiss→Animated Push",
+     "withoutAnimation { push(Settings) } → wait → pop → wait → push(Profile) with animation",
+     "[Profile] (animated)"),
+    (24, "Batch Push Without Animation",
+     "withoutAnimation { push([Settings, Profile, Account]) }",
+     "[Settings, Profile, Account] (no animation)"),
+    (25, "Mixed Animated/NoAnim",
+     "noAnim push(S) → wait → noAnim pop → wait → push(P) → wait → noAnim push(A)",
+     "[Profile, Account]"),
   ]
 
   var body: some View {
@@ -488,10 +525,10 @@ private struct StressTestButtons: View {
         )
       }
 
-      // For UITests completion
+      // For UITests completion, leave it transparent
       Text(status)
         .font(.caption2)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(.clear)
         .accessibilityIdentifier("stress-status")
     }
     .padding(.horizontal)
@@ -519,6 +556,11 @@ private struct StressTestButtons: View {
     case 18: runSequence18()
     case 19: runSequence19()
     case 20: runSequence20()
+    case 21: runSequence21()
+    case 22: runSequence22()
+    case 23: runSequence23()
+    case 24: runSequence24()
+    case 25: runSequence25()
     default: break
     }
   }
@@ -831,6 +873,105 @@ private struct StressTestButtons: View {
       navigator.replace(PushNotificationsSettingsDestination(id: "bbb"), at: 1)
       try? await Task.sleep(for: .milliseconds(500))
       status = "done-20"
+    }
+  }
+
+  // Sequence 21: withoutAnimation { push(Settings) } — cold start (first push ever)
+  // The transaction modifier on the sheet must suppress the animation even on first present.
+  // Expected final state: [Settings] (presented without animation)
+  private func runSequence21() {
+    guard let navigator else { return }
+    status = "running-21"
+    navigator.withoutAnimation {
+      $0.push(SettingsDestination())
+    }
+    Task {
+      try? await Task.sleep(for: .milliseconds(50))
+      status = "done-21"
+    }
+  }
+
+  // Sequence 22: push(Settings) → wait → withoutAnimation { popToRoot }
+  // Dismiss should happen without animation.
+  // Expected final state: [] (root)
+  private func runSequence22() {
+    guard let navigator else { return }
+    status = "running-22"
+    navigator.push(SettingsDestination())
+    Task {
+      try? await Task.sleep(for: .milliseconds(400))
+      navigator.withoutAnimation {
+        $0.popToRoot()
+      }
+      try? await Task.sleep(for: .milliseconds(50))
+      status = "done-22"
+    }
+  }
+
+  // Sequence 23: withoutAnimation { push(Settings) } → wait → pop → wait → push(Profile) with animation
+  // Verifies that the operationTransaction flag resets after the first no-animation push,
+  // so the subsequent animated push actually animates.
+  // Expected final state: [Profile] (presented with animation)
+  private func runSequence23() {
+    guard let navigator else { return }
+    status = "running-23"
+    navigator.withoutAnimation {
+      $0.push(SettingsDestination())
+    }
+    Task {
+      try? await Task.sleep(for: .milliseconds(50))
+      navigator.withoutAnimation {
+        $0.pop()
+      }
+      try? await Task.sleep(for: .milliseconds(50))
+      navigator.push(ProfileDestination())
+      try? await Task.sleep(for: .milliseconds(400))
+      status = "done-23"
+    }
+  }
+
+  // Sequence 24: withoutAnimation { push([Settings, Profile, Account]) }
+  // Batch push of 3 destinations all without animation.
+  // Expected final state: [Settings, Profile, Account] — Account on top.
+  private func runSequence24() {
+    guard let navigator else { return }
+    status = "running-24"
+    navigator.withoutAnimation {
+      $0.push([SettingsDestination(), ProfileDestination(), AccountDestination()])
+    }
+    Task {
+      try? await Task.sleep(for: .milliseconds(150))
+      status = "done-24"
+    }
+  }
+
+  // Sequence 25: Mixed animated / non-animated operations in sequence.
+  // noAnim push(Settings) → noAnim pop → push(Profile) animated → noAnim push(Account)
+  // Each operation alternates the transaction flag. Verifies the flag is set/reset per-operation.
+  // Expected final state: [Profile, Account] — Account on top.
+  private func runSequence25() {
+    guard let navigator else { return }
+    status = "running-25"
+    // Step 1: push Settings without animation
+    navigator.withoutAnimation {
+      $0.push(SettingsDestination())
+    }
+    Task {
+      try? await Task.sleep(for: .milliseconds(50))
+      // Step 2: pop without animation
+      navigator.withoutAnimation {
+        $0.popToRoot()
+      }
+      try? await Task.sleep(for: .milliseconds(50))
+      // Step 3: push Profile WITH animation (default)
+      navigator.push(ProfileDestination())
+      try? await Task.sleep(for: .milliseconds(400))
+      // Step 4: push Account on top without animation
+      navigator.withoutAnimation {
+        $0.push(AccountDestination())
+      }
+      try? await Task.sleep(for: .milliseconds(50))
+      status = "done-25"
     }
   }
 }

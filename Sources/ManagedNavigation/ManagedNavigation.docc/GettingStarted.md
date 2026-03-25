@@ -105,6 +105,18 @@ All pop methods return a `Bool` indicating whether the operation succeeded,
 and are marked `@discardableResult` so you can ignore the return value when
 you don't need it.
 
+### Replacing
+
+```swift
+// Replace the destination at a specific index:
+manager.replace(ProfileDestination(id: "new"), at: 1)
+// Stack: [Home, Details, Settings] → [Home, Profile, Settings]
+```
+
+The stack above the replaced index is preserved. Because `NavigationPath`
+only supports append/removeLast, the path is rebuilt from the replacement
+index onward.
+
 ## Navigate from Child Views
 
 Child views inside a ``ManagedNavigationStack`` can access the navigation
@@ -274,3 +286,25 @@ func restoreNavigationState() -> NavigationManager {
 }
 ```
 
+## Disable Animations
+
+Use ``NavigationManager/withoutAnimation(body:)`` (or
+``Navigator/withoutAnimation(body:)`` from child views) to perform
+navigation changes without animation. This is especially useful for
+state restoration or deep-link handling where animated transitions would
+look jarring:
+
+```swift
+// On the manager
+manager.withoutAnimation {
+    $0.push([
+        HomeDestination(),
+        DetailsDestination(id: "abc"),
+    ])
+}
+
+// From a child view
+navigator?.withoutAnimation {
+    $0.popToRoot()
+}
+```

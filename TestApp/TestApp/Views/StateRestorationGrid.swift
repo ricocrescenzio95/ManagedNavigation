@@ -5,7 +5,8 @@ struct StateRestorationGrid: View {
   @Environment(\.navigator) private var navigator
   @AppStorage("savedPath") private var savedPath: Data?
   @State private var isPathInspectorOpen = false
-
+  @State private var decodedPathCount = 0
+  
   private var pathCount: Int { navigator?.path.count ?? 0 }
   private var hasSaved: Bool { savedPath != nil }
   private var canSave: Bool { navigator?.codable != nil }
@@ -26,7 +27,7 @@ struct StateRestorationGrid: View {
       // Restore
       StateActionCard(
         title: "Restore",
-        detail: hasSaved ? "Tap to apply" : "No saved state",
+        detail: hasSaved ? "Apply \(decodedPathCount) destination(s)" : "No saved state",
         icon: "arrow.counterclockwise.circle.fill",
         color: .blue,
         disabled: !hasSaved
@@ -64,6 +65,13 @@ struct StateRestorationGrid: View {
       }
     }
     .padding(.horizontal)
+    .onChange(of: savedPath, initial: true) { _, savedPath in
+      if let savedPath, let codable = try? JSONDecoder().decode(
+        NavigationManager.CodableRepresentation.self, from: savedPath
+      ) {
+        decodedPathCount = NavigationManager(codable).path.count
+      }
+    }
   }
 }
 
@@ -91,10 +99,13 @@ private struct StateActionCard: View {
           .font(.caption)
           .foregroundStyle(.secondary)
       }
-      .padding()
-      .background(.regularMaterial, in: .rect(cornerRadius: 12))
+      .multilineTextAlignment(.leading)
+      .lineLimit(1)
+      .truncationMode(.middle)
+      .padding(8)
     }
-    .buttonStyle(.plain)
+    .buttonBorderShape(.roundedRectangle(radius: 16))
+    .buttonStyle(.glass)
     .disabled(disabled)
   }
 }

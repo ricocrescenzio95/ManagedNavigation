@@ -168,3 +168,79 @@ extension EnvironmentValues {
   /// ```
   @Entry public internal(set) var navigator: Navigator?
 }
+
+extension Navigator {
+  /// Performs navigation operations within a specific SwiftUI transaction.
+  ///
+  /// Use this method to control the animation used for push and pop operations
+  /// performed inside `body`. The transaction is also forwarded to
+  /// ``ManagedPresentation`` so that modal present/dismiss animations respect it.
+  ///
+  /// ```swift
+  /// navigator?.withTransaction(Transaction(animation: .easeInOut)) {
+  ///     $0.push(DetailsDestination(id: "abc"))
+  /// }
+  /// ```
+  ///
+  /// - Parameters:
+  ///   - transaction: The transaction to apply.
+  ///   - body: A closure that receives the navigator.
+  /// - Returns: The value returned by `body`.
+  @discardableResult public func withTransaction<Result>(
+    _ transaction: Transaction,
+    body: (Navigator) throws -> Result
+  ) rethrows -> Result {
+    binding.wrappedValue.transaction = transaction
+    let result = try SwiftUI.withTransaction(transaction) {
+      try body(self)
+    }
+    return result
+  }
+  
+  /// Performs navigation operations within a transaction configured by a
+  /// single key-path/value pair.
+  ///
+  /// This is a convenience wrapper around ``withTransaction(_:body:)`` that
+  /// creates a `Transaction`, sets the given key path, and applies it.
+  ///
+  /// ```swift
+  /// navigator?.withTransaction(\.animation, .easeInOut) {
+  ///     $0.push(DetailsDestination(id: "abc"))
+  /// }
+  /// ```
+  ///
+  /// - Parameters:
+  ///   - keyPath: A writable key path on `Transaction`.
+  ///   - value: The value to assign to `keyPath`.
+  ///   - body: A closure that receives the navigator.
+  /// - Returns: The value returned by `body`.
+  @discardableResult public func withTransaction<V, R>(
+    _ keyPath: WritableKeyPath<Transaction, V>,
+    _ value: V,
+    body: (Navigator) throws -> R
+  ) rethrows -> R {
+    var transaction = Transaction()
+    transaction[keyPath: keyPath] = value
+    return try withTransaction(transaction, body: body)
+  }
+
+  /// Performs navigation operations with animations disabled.
+  ///
+  /// All push, pop, and modal operations performed inside `body` execute
+  /// without animation.
+  ///
+  /// ```swift
+  /// navigator?.withoutAnimation {
+  ///     $0.push([
+  ///         HomeDestination(),
+  ///         DetailsDestination(id: "abc"),
+  ///     ])
+  /// }
+  /// ```
+  ///
+  /// - Parameter body: A closure that receives the navigator.
+  /// - Returns: The value returned by `body`.
+  @discardableResult public func withoutAnimation<Result>(body: (Navigator) throws -> Result) rethrows -> Result {
+    try withTransaction(\.disablesAnimations, true, body: body)
+  }
+}

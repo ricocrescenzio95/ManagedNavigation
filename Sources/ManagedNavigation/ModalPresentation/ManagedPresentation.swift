@@ -74,8 +74,9 @@ public struct ManagedPresentation<Root: View>: View {
         of: manager.path.map { AnyHashable($0) },
         initial: true
       ) { old, new in
-        model.onPathChange(old: old, new: new)
+        model.onPathChange(old: old, new: new, transaction: manager.transaction)
         navigator.syncPath()
+        manager.transaction = nil
       }
       .backgroundPreferenceValue(PresentationPreferenceKey.self) { presentations in
         LevelResolver(presentations: presentations, depth: 0)
@@ -91,6 +92,7 @@ private struct PresentationBody: View {
 
   @State private var isPresented = false
   @State private var storedDestination: (any NavigationDestination)?
+  @State private var operationTransaction: Transaction?
 
   var presentations: [ObjectIdentifier: PresentationData]
   var level: PresentationLevel
@@ -102,7 +104,8 @@ private struct PresentationBody: View {
     OperationObserver(
       level: level,
       isPresented: $isPresented,
-      storedDestination: $storedDestination
+      storedDestination: $storedDestination,
+      operationTransaction: $operationTransaction
     )
     .sheet(
       isPresented: .init(get: { isPresented(for: .sheet) }, set: { setPresented($0) }),
@@ -126,6 +129,11 @@ private struct PresentationBody: View {
       content
     }
 #endif
+    .transaction {
+      if let operationTransaction {
+        $0 = operationTransaction
+      }
+    }
   }
 
   private func isPresented(for presentationType: PresentationData.PresentationType) -> Bool {
@@ -141,11 +149,18 @@ private struct PresentationBody: View {
     }
 
     // A new present is already queued — don't tear down.
-    if level.operations.contains(.present) {
+    if level.hasPresentOperation {
       return
     }
 
     self.isPresented = false
+
+    // If this dismiss was programmatic (driven by an operation), the manager
+    // is already up-to-date — no need to sync. Only sync on user-initiated
+    // dismissals (swipe-to-dismiss) where there's no active dismiss operation.
+    if case .dismiss = level.operation {
+      return
+    }
 
     // User swipe-to-dismiss while idle — sync the manager.
     if depth == 0 {
@@ -177,7 +192,7 @@ private struct PresentationBody: View {
         #if DEBUG
           .onAppear {
             if let storedDestination {
-              logger.fault("No destination registered for \(String(describing: storedDestination.navigationID)). Use sheet(for:content:) or fullScreenCover(for:content:) to register a destination.")
+              logger.fault("No destination registered for \(type(of: storedDestination)). Use sheet(for:content:) or fullScreenCover(for:content:) to register a destination.")
             }
           }
         #endif
@@ -197,7 +212,11 @@ private struct PresentationBody: View {
       )
     }
     .background {
-      OperationCompletedObserver(level: level, storedDestination: $storedDestination)
+      OperationCompletedObserver(
+        level: level,
+        storedDestination: $storedDestination,
+        operationTransaction: $operationTransaction
+      )
     }
   }
 }
@@ -220,18 +239,21 @@ private struct OperationCompletedObserver: View {
   @Environment(PresentationModel.self) var model
   var level: PresentationLevel
   @Binding var storedDestination: (any NavigationDestination)?
+  @Binding var operationTransaction: Transaction?
   
   var body: some View {
     PresentationNotifier {
+      operationTransaction = nil
       model.onOperationCompleted(of: level)
     } onDismissed: {
       // Only clear the destination if no new present is pending.
       // A rapid dismiss→present sequence can cause onDismissed to fire
       // after the new present was already set up.
-      if !level.operations.contains(.present) {
+      if !level.hasPresentOperation {
         storedDestination = nil
       }
       
+      operationTransaction = nil
       model.onOperationCompleted(of: level)
     }
     .frame(width: 0, height: 0)
@@ -245,6 +267,7 @@ private struct OperationObserver: View {
   var level: PresentationLevel
   @Binding var isPresented: Bool
   @Binding var storedDestination: (any NavigationDestination)?
+  @Binding var operationTransaction: Transaction?
 
   var body: some View {
     Color.clear
@@ -252,11 +275,13 @@ private struct OperationObserver: View {
       .allowsHitTesting(false)
       .onChange(of: level.operation, initial: true) { _, operation in
         switch operation {
-        case .present:
+        case .present(let transaction):
+          operationTransaction = transaction
           isPresented = true
           storedDestination = level.destination
-        case .dismiss:
+        case .dismiss(let transaction):
           if isPresented {
+            operationTransaction = transaction
             isPresented = false
           } else {
             // Sheet was already dismissed by UIKit (user swipe).
@@ -271,9 +296,14 @@ private struct OperationObserver: View {
 
 @Observable
 private class PresentationLevel {
-  enum Operation: CustomStringConvertible {
-    case present
-    case dismiss
+  enum Operation: CustomStringConvertible, Equatable {
+    static func == (lhs: PresentationLevel.Operation, rhs: PresentationLevel.Operation) -> Bool {
+      // we don't consider Transaction in equality check
+      lhs.description == rhs.description
+    }
+    
+    case present(Transaction?)
+    case dismiss(Transaction?)
 
     var description: String {
       switch self {
@@ -286,6 +316,24 @@ private class PresentationLevel {
   var destination: (any NavigationDestination)?
   var operations: [Operation] = []
   var operation: Operation?
+  
+  var hasPresentOperation: Bool {
+    operations.contains {
+      switch $0 {
+      case .present: true
+      case .dismiss: false
+      }
+    }
+  }
+  
+  var hasDismissOperation: Bool {
+    operations.contains {
+      switch $0 {
+      case .present: false
+      case .dismiss: true
+      }
+    }
+  }
 }
 
 @Observable
@@ -293,6 +341,7 @@ private class PresentationModel {
   struct Snapshot {
     let navigationIDs: [AnyHashable]
     let destinations: [any NavigationDestination]
+    let transaction: Transaction?
   }
 
   var levels: [PresentationLevel] = [.init()]
@@ -306,7 +355,7 @@ private class PresentationModel {
   /// Pending snapshots waiting to be processed (collapsed to at most one).
   private var pendingSnapshots: [Snapshot] = []
 
-  func onPathChange(old: [AnyHashable], new: [AnyHashable]) {
+  func onPathChange(old: [AnyHashable], new: [AnyHashable], transaction: Transaction?) {
     // Create all necessary levels
     let needed = max(old.count, new.count)
     while levels.count < needed {
@@ -322,7 +371,7 @@ private class PresentationModel {
     // Build snapshot of navigationIDs and enqueue
     let navigationIDs = destinations.map { AnyHashable($0.navigationID) }
     
-    enqueueSnapshot(.init(navigationIDs: navigationIDs, destinations: destinations))
+    enqueueSnapshot(.init(navigationIDs: navigationIDs, destinations: destinations, transaction: transaction))
   }
   
   /// Updates destinations on levels that have no in-flight operations.
@@ -371,11 +420,11 @@ private class PresentationModel {
     // Set destinations from the snapshot for levels that will be presented.
     for index in prefixLength..<new.count {
       levels[index].destination = snapshot.destinations[index]
-      levels[index].operations.append(.present)
+      levels[index].operations.append(.present(snapshot.transaction))
     }
 
     if prefixLength < old.count {
-      levels[prefixLength].operations.append(.dismiss)
+      levels[prefixLength].operations.append(.dismiss(snapshot.transaction))
     }
 
     // Update idle levels (shared prefix) with latest destination data.
@@ -392,12 +441,12 @@ private class PresentationModel {
 
     executeNextOperation()
   }
-  
+
   private func executeNextOperation() {
-    if let firstDismiss = levels.first(where: { $0.operations.contains(.dismiss) && $0.operation == nil }) {
-      firstDismiss.operation = .dismiss
-    } else if let first = levels.first(where: { $0.operations.contains(.present) && $0.operation == nil }) {
-      first.operation = .present
+    if let firstDismiss = levels.first(where: { $0.hasDismissOperation && $0.operation == nil }) {
+      firstDismiss.operation = .dismiss(processingSnapshot?.transaction)
+    } else if let first = levels.first(where: { $0.hasPresentOperation && $0.operation == nil }) {
+      first.operation = .present(processingSnapshot?.transaction)
     } else {
       confirmAndAdvance()
     }

@@ -45,7 +45,9 @@ ManagedNavigation solves all of this with a thin layer that keeps a **typed `[an
 - **Pop to first** — `popToFirst(HomeDestination.self)` pops to the first occurrence
 - **Pop by predicate** — `popTo(where: { $0.destination is DetailsDestination })` for custom logic
 - **Pop by index** — `popTo(at: 2)` with optional type safety via `popTo(HomeDestination.self, at: 2)`
+- **Replace in place** — `replace(ProfileDestination(), at: 1)` swaps a destination while preserving the rest of the stack
 - **Modal presentations** — sheets and full-screen covers driven by the same path, with nested presentation support
+- **Disable animations** — `withoutAnimation { }` for instant navigation (state restoration, deep links)
 - **State persistence** — `Codable` representation that preserves type information, encode/decode with any encoder
 - **Environment-based proxy** — child views navigate via `@Environment(\.navigator)` without coupling to the manager
 
@@ -107,6 +109,16 @@ for (i, destination) in manager.path.enumerated() {
 }
 ```
 
+### Replace Operations
+
+Swap a destination at a specific index while keeping the rest of the stack intact:
+
+```swift
+// Stack: [Home, Details, Settings]
+manager.replace(ProfileDestination(), at: 1)
+// Stack: [Home, Profile, Settings]
+```
+
 ### Modal Presentations
 
 Use `ManagedPresentation` to manage sheets and full-screen covers with the same path-driven approach — no more juggling separate `@State` booleans:
@@ -165,6 +177,27 @@ if let data = UserDefaults.standard.data(forKey: "savedPath"),
        NavigationManager.CodableRepresentation.self, from: data
    ) {
     manager = NavigationManager(codable)
+}
+```
+
+### Disable Animations
+
+Use `withoutAnimation` to perform navigation changes instantly — useful for state restoration or deep-link handling:
+
+```swift
+manager.withoutAnimation {
+    $0.push([
+        HomeDestination(),
+        DetailsDestination(id: "abc"),
+    ])
+}
+```
+
+Child views can do the same through the navigator:
+
+```swift
+navigator?.withoutAnimation {
+    $0.popToRoot()
 }
 ```
 

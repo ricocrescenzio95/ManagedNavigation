@@ -75,11 +75,18 @@ ManagedPresentation(manager: $manager) {
 ### Defining Destinations
 
 - ``NavigationDestination``
+- ``NavigationDestination/navigationID``
+- ``NavigationDestination/matchesDestination(_:)``
+- ``NavigationDestination/equalsDestination(_:)``
 
 ### Navigating from Child Views
 
 - ``Navigator``
 - ``SwiftUICore/EnvironmentValues/navigator``
+
+### Replacing Destinations
+
+- ``NavigationManager/replace(_:at:)``
 
 ### Inspecting the Stack
 
@@ -92,6 +99,11 @@ ManagedPresentation(manager: $manager) {
 - ``PresentationContext``
 - ``SwiftUICore/View/sheet(for:onDismiss:content:)``
 - ``SwiftUICore/View/fullScreenCover(for:onDismiss:content:)``
+
+### Animation Control
+
+- ``NavigationManager/withoutAnimation(body:)``
+- ``Navigator/withoutAnimation(body:)``
 
 ### Saving and Restoring State
 
