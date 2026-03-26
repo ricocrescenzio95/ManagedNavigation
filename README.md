@@ -7,6 +7,9 @@
 ### Programmatic navigation management for SwiftUI
 
 <p>
+  <a href="https://github.com/ricocrescenzio95/ManagedNavigation/actions/workflows/tests.yml">
+    <img src="https://github.com/ricocrescenzio95/ManagedNavigation/actions/workflows/tests.yml/badge.svg?branch=main">
+  </a>
   <a href="https://github.com/ricocrescenzio95/ManagedNavigation/releases">
     <img src="https://img.shields.io/github/v/release/ricocrescenzio95/ManagedNavigation?include_prereleases&label=Swift%20Package%20Manager">
   </a>
