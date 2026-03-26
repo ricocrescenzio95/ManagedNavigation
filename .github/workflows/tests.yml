@@ -23,6 +23,6 @@ jobs:
             -project TestApp/TestApp.xcodeproj \
             -scheme TestApp \
             -testPlan AllTests \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -destination 'platform=iOS Simulator,name=iPhone 17 Pro' \
             -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO
