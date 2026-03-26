@@ -3,11 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 77;
+	objectVersion = 70;
 	objects = {
 
 /* Begin PBXBuildFile section */
-		1FF6316D2F6AEFA100EE6A75 /* ManagedNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = 1FF6316C2F6AEFA100EE6A75 /* ManagedNavigation */; };
+		1FAF1D0F2F752A6A00266A69 /* ManagedNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = 1FAF1D0E2F752A6A00266A69 /* ManagedNavigation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -22,21 +22,16 @@
 
 /* Begin PBXFileReference section */
 		1F6586402F6C74E800764132 /* TestAppUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = TestAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
-		1F65867C2F6EF4C000764132 /* TestApp.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = TestApp.xctestplan; sourceTree = "<group>"; };
+		1F65867C2F6EF4C000764132 /* UITests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = UITests.xctestplan; sourceTree = "<group>"; };
+		1FAF1CEF2F7529C800266A69 /* ManagedDestination */ = {isa = PBXFileReference; lastKnownFileType = wrapper; name = ManagedDestination; path = ../; sourceTree = "<absolute>"; };
+		1FDB307A2F75334F002AAF26 /* UnitTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = UnitTests.xctestplan; sourceTree = "<group>"; };
+		1FDB307B2F75337B002AAF26 /* AllTests.xctestplan */ = {isa = PBXFileReference; lastKnownFileType = text; path = AllTests.xctestplan; sourceTree = "<group>"; };
 		1FF6313F2F6AEE8600EE6A75 /* TestApp.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TestApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		1F6586412F6C74E800764132 /* TestAppUITests */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = TestAppUITests;
-			sourceTree = "<group>";
-		};
-		1FF631412F6AEE8600EE6A75 /* TestApp */ = {
-			isa = PBXFileSystemSynchronizedRootGroup;
-			path = TestApp;
-			sourceTree = "<group>";
-		};
+		1F6586412F6C74E800764132 /* TestAppUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = TestAppUITests; sourceTree = "<group>"; };
+		1FF631412F6AEE8600EE6A75 /* TestApp */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = TestApp; sourceTree = "<group>"; };
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -51,19 +46,30 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				1FF6316D2F6AEFA100EE6A75 /* ManagedNavigation in Frameworks */,
+				1FAF1D0F2F752A6A00266A69 /* ManagedNavigation in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		1FAF1D0D2F752A6A00266A69 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		1FF631362F6AEE8600EE6A75 = {
 			isa = PBXGroup;
 			children = (
-				1F65867C2F6EF4C000764132 /* TestApp.xctestplan */,
+				1FDB307B2F75337B002AAF26 /* AllTests.xctestplan */,
+				1FDB307A2F75334F002AAF26 /* UnitTests.xctestplan */,
+				1FAF1CEF2F7529C800266A69 /* ManagedDestination */,
+				1F65867C2F6EF4C000764132 /* UITests.xctestplan */,
 				1FF631412F6AEE8600EE6A75 /* TestApp */,
 				1F6586412F6C74E800764132 /* TestAppUITests */,
+				1FAF1D0D2F752A6A00266A69 /* Frameworks */,
 				1FF631402F6AEE8600EE6A75 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -120,7 +126,7 @@
 			);
 			name = TestApp;
 			packageProductDependencies = (
-				1FF6316C2F6AEFA100EE6A75 /* ManagedNavigation */,
+				1FAF1D0E2F752A6A00266A69 /* ManagedNavigation */,
 			);
 			productName = TestApp;
 			productReference = 1FF6313F2F6AEE8600EE6A75 /* TestApp.app */;
@@ -147,6 +153,7 @@
 				};
 			};
 			buildConfigurationList = 1FF6313A2F6AEE8600EE6A75 /* Build configuration list for PBXProject "TestApp" */;
+			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -156,9 +163,7 @@
 			mainGroup = 1FF631362F6AEE8600EE6A75;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				1FF6316B2F6AEFA100EE6A75 /* XCLocalSwiftPackageReference "../../ManagedNavigation" */,
 			);
-			preferredProjectObjectVersion = 77;
 			productRefGroup = 1FF631402F6AEE8600EE6A75 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -503,15 +508,8 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCLocalSwiftPackageReference section */
-		1FF6316B2F6AEFA100EE6A75 /* XCLocalSwiftPackageReference "../../ManagedNavigation" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = ../../ManagedNavigation;
-		};
-/* End XCLocalSwiftPackageReference section */
-
 /* Begin XCSwiftPackageProductDependency section */
-		1FF6316C2F6AEFA100EE6A75 /* ManagedNavigation */ = {
+		1FAF1D0E2F752A6A00266A69 /* ManagedNavigation */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ManagedNavigation;
 		};
