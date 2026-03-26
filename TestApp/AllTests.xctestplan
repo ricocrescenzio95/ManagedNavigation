@@ -1,0 +1,31 @@
+{
+  "configurations" : [
+    {
+      "id" : "D0B800CF-CB6F-4046-ABCB-CCE27C243A18",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:TestApp.xcodeproj",
+        "identifier" : "1F65863F2F6C74E800764132",
+        "name" : "TestAppUITests"
+      }
+    },
+    {
+      "target" : {
+        "containerPath" : "container:..",
+        "identifier" : "ManagedNavigationTests",
+        "name" : "ManagedNavigationTests"
+      }
+    }
+  ],
+  "version" : 1
+}

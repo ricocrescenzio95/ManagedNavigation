@@ -1,0 +1,24 @@
+{
+  "configurations" : [
+    {
+      "id" : "20FF9B3C-C0B8-4BC9-B8C4-E6973042D18A",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:..",
+        "identifier" : "ManagedNavigationTests",
+        "name" : "ManagedNavigationTests"
+      }
+    }
+  ],
+  "version" : 1
+}
