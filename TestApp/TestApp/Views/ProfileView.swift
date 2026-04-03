@@ -79,7 +79,7 @@ struct ProfileView: View {
           Button("Pop") {
             navigator?.pop()
           }
-          .buttonStyle(.bordered)
+          .buttonStyle(.glass)
         }
         .padding(.horizontal)
         

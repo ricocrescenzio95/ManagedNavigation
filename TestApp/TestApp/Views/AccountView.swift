@@ -84,14 +84,13 @@ struct AccountView: View {
           Button("Push Another Account") {
             navigator?.push(AccountDestination())
           }
-          .buttonStyle(.bordered)
           
           Button("Dismiss") {
             dismiss()
           }
-          .buttonStyle(.bordered)
           .tint(.red)
         }
+        .buttonStyle(.glass)
         .padding(.horizontal)
         
         Spacer(minLength: 40)

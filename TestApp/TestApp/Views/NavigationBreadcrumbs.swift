@@ -24,8 +24,6 @@ struct NavigationBreadcrumbs: View {
               .padding(.horizontal, 8)
               .padding(.vertical, 4)
           }
-          .buttonStyle(.bordered)
-          .buttonBorderShape(.capsule)
           .tint(path.isEmpty ? .accentColor : .secondary)
 
           ForEach(items) { item in
@@ -45,11 +43,11 @@ struct NavigationBreadcrumbs: View {
               .padding(.horizontal, 8)
               .padding(.vertical, 4)
             }
-            .buttonStyle(.bordered)
             .buttonBorderShape(.capsule)
             .tint(isLast ? .accentColor : .secondary)
           }
         }
+        .buttonStyle(.glass)
         .font(.caption2)
         .frame(height: 40)
         .padding(.horizontal)

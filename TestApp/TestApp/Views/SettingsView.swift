@@ -94,6 +94,8 @@ struct SettingsView: View {
         Button("Pop to Root") {
           navigator?.popToRoot()
         }
+        .tint(.red)
+        .buttonStyle(.glass)
       }
     }
     .sheet(for: PushNotificationsSettingsDestination.self) { context in

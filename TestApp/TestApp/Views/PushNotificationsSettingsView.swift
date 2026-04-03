@@ -81,7 +81,9 @@ struct PushNotificationsSettingsView: View {
           Button("Pop to Root") {
             navigator?.popToRoot()
           }
+          .tint(.red)
         }
+        .buttonStyle(.glass)
       }
       .disabled(!isEnabled)
     }
