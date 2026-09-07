@@ -38,6 +38,7 @@ public struct PresentationContext<D: NavigationDestination> {
 
 private struct PresentationDestinationModifier<D: NavigationDestination, C: View>: ViewModifier {
   @Environment(\.navigator) private var navigator
+  @Environment(\.self) private var environmentValues
   
   var data: D.Type
   var viewContent: (PresentationContext<D>) -> C
@@ -48,7 +49,10 @@ private struct PresentationDestinationModifier<D: NavigationDestination, C: View
     content
       .transformPreference(PresentationPreferenceKey.self) { value in
         value[data.id] = .init(
-          view: { viewContent(.init(destination: $0 as! D, index: $1)) },
+          view: {
+            viewContent(.init(destination: $0 as! D, index: $1))
+              .environment(\.self, environmentValues)
+          },
           presentationType: presentationType,
           onDismiss: { onDismiss?(.init(destination: $0 as! D, index: $1)) }
         )
