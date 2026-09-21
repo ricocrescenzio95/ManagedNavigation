@@ -18,8 +18,7 @@ import Observation
 public class Navigator: ObservableObject {
   // MARK: - Internal storage
 
-  @ObservationIgnored
-  var binding: Binding<NavigationManager>
+  let binding: Binding<NavigationManager>
 
   /// The current navigation path.
   public internal(set) var path: [any NavigationDestination] = []
