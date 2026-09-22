@@ -14,11 +14,26 @@ jobs:
   test:
     name: All Tests
     runs-on: xcode-27
+
     steps:
       - uses: actions/checkout@v4
 
+      - name: Environment
+        run: |
+          sw_vers
+          xcodebuild -version
+          xcrun simctl list runtimes
+          xcrun simctl list devices available
+
+      - name: Boot Simulator
+        run: |
+          xcrun simctl boot "iPhone 18 Pro" || true
+          xcrun simctl bootstatus "iPhone 18 Pro" -b
+
       - name: Run Tests
         run: |
+          set -o pipefail
+
           xcodebuild test \
             -project TestApp/TestApp.xcodeproj \
             -scheme TestApp \
@@ -26,3 +41,10 @@ jobs:
             -destination 'platform=iOS Simulator,name=iPhone 18 Pro' \
             -resultBundlePath TestResults.xcresult \
             CODE_SIGNING_ALLOWED=NO
+
+      - name: Upload xcresult
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: TestResults
+          path: TestResults.xcresult
