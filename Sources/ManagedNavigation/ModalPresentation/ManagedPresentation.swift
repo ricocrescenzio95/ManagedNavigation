@@ -82,6 +82,7 @@ public struct ManagedPresentation<Root: View>: View {
         LevelResolver(presentations: presentations, depth: 0)
           .environment(model)
       }
+      .environment(model)
       .environment(\.navigator, navigator)
   }
 }
@@ -222,16 +223,34 @@ private struct PresentationBody: View {
 }
 
 private struct LevelResolver: View {
+  @Environment(\.navigator) private var navigator
+  @Environment(\.self) private var environment
   @Environment(PresentationModel.self) var model
   var presentations: [ObjectIdentifier: PresentationData]
   var depth: Int
-  
+
+  private var level: PresentationLevel {
+    model.levels.indices.contains(depth) ? model.levels[depth] : .init()
+  }
+
+  private var presentationEnvironment: EnvironmentValues {
+    if let destination = level.destination,
+       let presentation = presentations[destination.navigationID] {
+      presentation.environment
+    } else {
+      environment
+    }
+  }
+
   var body: some View {
     PresentationBody(
       presentations: presentations,
-      level: model.levels.indices.contains(depth) ? model.levels[depth] : .init(),
+      level: level,
       depth: depth,
     )
+    .environment(\.self, presentationEnvironment)
+    .environment(model)
+    .environment(\.navigator, navigator)
   }
 }
 

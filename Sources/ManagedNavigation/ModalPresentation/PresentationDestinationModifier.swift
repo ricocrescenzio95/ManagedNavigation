@@ -11,6 +11,7 @@ struct PresentationData {
     case fullScreenCover
   }
   var view: (any NavigationDestination, _ index: Int) -> any View
+  var environment: EnvironmentValues
   var presentationType: PresentationType
   var onDismiss: ((any NavigationDestination, _ index: Int) -> Void)?
 }
@@ -36,14 +37,30 @@ public struct PresentationContext<D: NavigationDestination> {
   public var index: Int
 }
 
-private struct PresentationDestinationModifier<D: NavigationDestination, C: View>: ViewModifier {
-  @Environment(\.navigator) private var navigator
-  
+private struct PresentationDestinationModifier<D: NavigationDestination, C: View>: @MainActor EnvironmentalModifier {
   var data: D.Type
   var viewContent: (PresentationContext<D>) -> C
   var onDismiss: ((PresentationContext<D>) -> Void)?
   var presentationType: PresentationData.PresentationType
-  
+
+  @MainActor func resolve(in environment: EnvironmentValues) -> ResolvedPresentationDestinationModifier<D, C> {
+    ResolvedPresentationDestinationModifier(
+      data: data,
+      viewContent: viewContent,
+      onDismiss: onDismiss,
+      presentationType: presentationType,
+      environment: environment,
+    )
+  }
+}
+
+private struct ResolvedPresentationDestinationModifier<D: NavigationDestination, C: View>: ViewModifier {
+  var data: D.Type
+  var viewContent: (PresentationContext<D>) -> C
+  var onDismiss: ((PresentationContext<D>) -> Void)?
+  var presentationType: PresentationData.PresentationType
+  var environment: EnvironmentValues
+
   func body(content: Content) -> some View {
     content
       .transformPreference(PresentationPreferenceKey.self) { value in
@@ -51,13 +68,14 @@ private struct PresentationDestinationModifier<D: NavigationDestination, C: View
           view: {
             viewContent(.init(destination: $0 as! D, index: $1))
           },
+          environment: environment,
           presentationType: presentationType,
           onDismiss: { onDismiss?(.init(destination: $0 as! D, index: $1)) }
         )
       }
       .onAppear {
         #if DEBUG
-        if navigator == nil {
+        if environment.navigator == nil {
           logger.log(level: .fault, "sheet(for:content:) and fullScreenCover(for:content:) modifiers are allowed only in ManagedPresentation children")
         }
         #endif
