@@ -143,6 +143,9 @@ private enum SampleData {
     Category(id: 2, title: "Full Screen Covers", icon: "rectangle.fill", items: [
       CategoryItem(id: 10, title: "Account", subtitle: "Full screen", icon: "person.crop.rectangle.fill", color: .orange, destination: AccountDestination()),
     ]),
+    Category(id: 3, title: "Environment test", icon: "circles.hexagongrid", items: [
+      CategoryItem(id: 11, title: "Environment", subtitle: "Test environment", icon: "circles.hexagongrid", color: .yellow, destination: EnvironmentTestDestination()),
+    ]),
   ]
 }
 

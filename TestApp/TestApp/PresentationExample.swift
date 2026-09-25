@@ -24,6 +24,12 @@ struct PresentationExample: View {
           HomeView(title: "Presentation", showClose: true)
         }
       }
+      .sheet(for: EnvironmentTestDestination.self) { _ in
+        NavigationStack {
+          EnvironmentTestView()
+            .environment(\.customEnvironment, .modified)
+        }
+      }
       #if os(macOS)
       // macOS has no API to present full screen, fallback to sheet
       .sheet(for: AccountDestination.self) { _ in

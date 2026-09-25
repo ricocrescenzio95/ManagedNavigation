@@ -35,6 +35,13 @@ final class PresentationUITests: XCTestCase {
     #endif
   }
 
+  private func scrollToElement(_ element: XCUIElement, maxAttempts: Int = 6) {
+    for _ in 0..<maxAttempts {
+      if element.waitForExistence(timeout: 1) { return }
+      app.swipeUp(velocity: .slow)
+    }
+  }
+
   // MARK: - Single push/dismiss
 
   func testSinglePushAndDismiss() {
@@ -50,6 +57,31 @@ final class PresentationUITests: XCTestCase {
 
     // Verify we're back to the root
     XCTAssertTrue(settingsButton.waitForExistence(timeout: 5))
+  }
+
+  func testEnvironmentPropagationAndDismiss() {
+    let environmentButton = app.buttons["push-environment"]
+    scrollToElement(environmentButton)
+    XCTAssertTrue(environmentButton.waitForExistence(timeout: 5), "Environment test card should be visible")
+    environmentButton.tap()
+
+    XCTAssertTrue(navigationTitleExists("Environment Parent"))
+    let parentValue = app.staticTexts["environment-parent-value"]
+    XCTAssertTrue(parentValue.waitForExistence(timeout: 5))
+    XCTAssertEqual(parentValue.label, "modified")
+
+    app.buttons["environment-open-child"].tap()
+
+    XCTAssertTrue(navigationTitleExists("Environment Child"))
+    let childValue = app.staticTexts["environment-child-value"]
+    XCTAssertTrue(childValue.waitForExistence(timeout: 5))
+    XCTAssertEqual(childValue.label, "modified")
+
+    app.buttons["environment-dismiss-child"].tap()
+
+    XCTAssertTrue(navigationTitleExists("Environment Parent"))
+    XCTAssertTrue(app.buttons["environment-open-child"].waitForExistence(timeout: 5))
+    XCTAssertFalse(app.buttons["environment-dismiss-child"].waitForExistence(timeout: 2))
   }
 
   // MARK: - Rapid sequential pushes (same destination)

@@ -23,6 +23,10 @@ struct NavigationStackExample: View {
       .navigationDestination(for: AccountDestination.self) { _ in
         AccountView()
       }
+      .navigationDestination(for: EnvironmentTestDestination.self) { _ in
+        EnvironmentTestView()
+          .environment(\.customEnvironment, .modified)
+      }
     }
   }
 }
