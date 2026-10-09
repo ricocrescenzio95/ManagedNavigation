@@ -10,6 +10,11 @@ struct ProfileDestination: NavigationDestination, Codable {}
 struct AccountDestination: NavigationDestination, Codable {}
 struct NonRegisteredDestination: NavigationDestination {}
 
+struct NestedLevel1Destination: NavigationDestination {}
+struct NestedLevel2Destination: NavigationDestination {}
+struct NestedLevel3Destination: NavigationDestination {}
+struct NestedLevel4Destination: NavigationDestination {}
+
 @main
 struct TestApp: App {
   var body: some Scene {

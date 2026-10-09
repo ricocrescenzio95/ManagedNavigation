@@ -42,6 +42,45 @@ final class PresentationUITests: XCTestCase {
     }
   }
 
+  private func openNestedRegistrations(
+    to depth: Int,
+    rootButtonIdentifier: String = "push-nested registrations"
+  ) {
+    let rootButton = app.buttons[rootButtonIdentifier]
+    XCTAssertTrue(
+      rootButton.waitForExistence(timeout: 5),
+      "Nested Registrations entry should be visible"
+    )
+    rootButton.tap()
+    XCTAssertTrue(navigationTitleExists("Nested Level 1"), "The first sheet should appear")
+
+    guard depth >= 2 else { return }
+    for level in 2...depth {
+      let nextButton = app.buttons["push-nested-level-\(level)"]
+      XCTAssertTrue(
+        nextButton.waitForExistence(timeout: 5),
+        "Level \(level - 1) should register level \(level)"
+      )
+      nextButton.tap()
+      XCTAssertTrue(
+        navigationTitleExists("Nested Level \(level)", timeout: 10),
+        "Nested level \(level) should appear"
+      )
+    }
+  }
+
+  func testNestedSheetRegistrationAtTwoLevels() {
+    openNestedRegistrations(to: 2)
+    XCTAssertTrue(app.staticTexts["nested-level-2"].waitForExistence(timeout: 5))
+  }
+
+  func testNestedSheetRegistrationThroughFourLevels() {
+    openNestedRegistrations(to: 4)
+    for level in 2...4 {
+      XCTAssertTrue(app.staticTexts["nested-level-\(level)"].waitForExistence(timeout: 5))
+    }
+  }
+
   // MARK: - Single push/dismiss
 
   func testSinglePushAndDismiss() {
