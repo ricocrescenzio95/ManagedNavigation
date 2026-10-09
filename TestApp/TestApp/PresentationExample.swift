@@ -30,6 +30,11 @@ struct PresentationExample: View {
             .environment(\.customEnvironment, .modified)
         }
       }
+      .sheet(for: NestedLevel1Destination.self) { _ in
+        NestedContextEnvView(context: .sample()) {
+          NestedPresentationLevel1View()
+        }
+      }
       #if os(macOS)
       // macOS has no API to present full screen, fallback to sheet
       .sheet(for: AccountDestination.self) { _ in

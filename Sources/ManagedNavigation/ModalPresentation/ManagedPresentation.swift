@@ -212,6 +212,9 @@ private struct PresentationBody: View {
         depth: depth + 1
       )
     }
+    .transformPreference(PresentationPreferenceKey.self) { value in
+      value.removeAll()
+    }
     .background {
       OperationCompletedObserver(
         level: level,

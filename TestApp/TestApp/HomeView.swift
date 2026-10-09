@@ -138,7 +138,14 @@ private enum SampleData {
       CategoryItem(id: 1, title: "Settings", subtitle: "App settings", icon: "gearshape.fill", color: .blue, destination: SettingsDestination()),
       CategoryItem(id: 2, title: "Profile", subtitle: "User profile", icon: "person.fill", color: .purple, destination: ProfileDestination()),
       CategoryItem(id: 3, title: "Other Dashboard", subtitle: "Another dashboard", icon: "slider.horizontal.below.square.fill.and.square", color: .green, destination: HomeViewDestination()),
-      
+      CategoryItem(
+        id: 4,
+        title: "Nested Registrations",
+        subtitle: "Four sheet levels",
+        icon: "rectangle.stack.badge.plus",
+        color: .indigo,
+        destination: NestedLevel1Destination()
+      ),
     ]),
     Category(id: 2, title: "Full Screen Covers", icon: "rectangle.fill", items: [
       CategoryItem(id: 10, title: "Account", subtitle: "Full screen", icon: "person.crop.rectangle.fill", color: .orange, destination: AccountDestination()),
