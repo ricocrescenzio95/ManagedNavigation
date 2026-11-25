@@ -84,6 +84,9 @@ public struct ManagedPresentation<Root: View>: View {
       }
       .environment(model)
       .environment(\.navigator, navigator)
+      .transformEnvironment(\.navigators) { container in
+        container.register(navigator)
+      }
   }
 }
 

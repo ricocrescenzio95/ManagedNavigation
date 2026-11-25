@@ -6,8 +6,8 @@ struct DetailsDestination: NavigationDestination, Codable {
 }
 
 struct NavigationStackExample: View {
-  @State var manager = NavigationManager()
-  
+  @State private var manager = NavigationManager(id: "main")
+
   var body: some View {
     ManagedNavigationStack(manager: $manager) {
       HomeView(title: "Navigation Stack", showClose: false)

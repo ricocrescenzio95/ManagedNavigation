@@ -109,4 +109,4 @@ ManagedPresentation(manager: $manager) {
 
 - ``NavigationManager/CodableRepresentation``
 - ``NavigationManager/codable``
-- ``NavigationManager/init(_:)-(CodableRepresentation)``
+- ``NavigationManager/init(_:id:)-([NavigationDestination],_)``

@@ -50,6 +50,9 @@ public struct ManagedNavigationStack<Root: View>: View {
       root
     }
     .environment(\.navigator, navigator)
+    .transformEnvironment(\.navigators) { container in
+      container.register(navigator)
+    }
     .onChange(of: manager.path.map { AnyHashable($0) }, initial: true) {
       navigator.syncPath()
     }

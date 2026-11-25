@@ -2,7 +2,11 @@ import SwiftUI
 import ManagedNavigation
 
 struct SettingsView: View {
-  @Environment(\.navigator) private var navigator
+  @Environment(\.navigators) private var navigators
+  
+  private var navigator: Navigator? {
+    navigators["main"]
+  }
   
   @State private var notificationsEnabled = true
   @State private var darkMode = false

@@ -2,7 +2,7 @@ import SwiftUI
 import ManagedNavigation
 
 struct PresentationExample: View {
-  @State private var manager = NavigationManager()
+  @State private var manager = NavigationManager(id: "main")
   
   var body: some View {
     ManagedPresentation(manager: $manager) {
