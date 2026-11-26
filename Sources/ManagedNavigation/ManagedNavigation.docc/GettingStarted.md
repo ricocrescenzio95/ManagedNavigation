@@ -320,6 +320,60 @@ struct RootView: View {
 The subscript returns `nil` when no navigator with that identifier is among
 the ancestors of the view.
 
+### Look Up Navigators by Kind or Position
+
+You don't always know, or want to hard-code, the `id` of an ancestor's
+manager. Every ``Navigator`` has a ``Navigator/kind``: ``Navigator/Kind/stack``
+for a ``ManagedNavigationStack`` and ``Navigator/Kind/modal`` for a
+``ManagedPresentation``. ``NavigatorsContainer`` uses it, and the position of
+each container in the hierarchy, to find the navigator you need:
+
+```swift
+// Hierarchy: ManagedPresentation(root) > ManagedNavigationStack(a)
+//            > ManagedPresentation(sheet) > ManagedNavigationStack(b)
+@Environment(\.navigators) private var navigators
+
+navigators.nearest              // Stack(b), same as \.navigator
+navigators.outermost            // Presentation(root)
+navigators.ancestor(1)          // Presentation(sheet)
+
+navigators.nearestStack         // Stack(b)
+navigators.nearestModal         // Presentation(sheet)
+navigators.outermost(.modal)    // Presentation(root)
+navigators.ancestor(1, of: .stack) // Stack(a)
+navigators.navigators(of: .stack)  // [Stack(a), Stack(b)]
+```
+
+For example, to present a sheet from the nearest presentation, push onto the
+stack one level further up, or dismiss every modal from anywhere:
+
+```swift
+Button("Open Settings") {
+    navigators.nearestModal?.push(SettingsDestination())
+}
+Button("Show details on the outer stack") {
+    navigators.ancestor(1, of: .stack)?.push(DetailsDestination(id: "abc"))
+}
+Button("Dismiss everything") {
+    navigators.outermost(.modal)?.popToRoot()
+}
+```
+
+To walk up from a navigator you already have, use
+``NavigatorsContainer/parent(of:kind:)``. Pass a `kind` to skip enclosing
+containers of the other kind:
+
+```swift
+if let stack = navigators.nearestStack {
+    let presenter = navigators.parent(of: stack, kind: .modal)
+}
+```
+
+Every lookup returns `nil` when no matching navigator is among the ancestors.
+``NavigatorsContainer/count``, ``NavigatorsContainer/isEmpty`` and
+``NavigatorsContainer/contains(_:)`` tell you what is available without
+looking a navigator up.
+
 > Note: Navigators are only collected going **down** the view hierarchy.
 > Containers that are siblings (for example one ``ManagedNavigationStack``
 > per tab of a `TabView`) cannot see each other's navigators. To coordinate

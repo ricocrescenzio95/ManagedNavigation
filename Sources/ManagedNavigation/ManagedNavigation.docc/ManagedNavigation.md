@@ -82,7 +82,16 @@ ManagedPresentation(manager: $manager) {
 ### Navigating from Child Views
 
 - ``Navigator``
+- ``Navigator/Kind``
 - ``SwiftUICore/EnvironmentValues/navigator``
+
+### Accessing Ancestor Navigators
+
+- ``SwiftUICore/EnvironmentValues/navigators``
+- ``NavigatorsContainer``
+- ``NavigatorsContainer/nearest(_:)``
+- ``NavigatorsContainer/ancestor(_:of:)``
+- ``NavigatorsContainer/parent(of:kind:)``
 
 ### Replacing Destinations
 

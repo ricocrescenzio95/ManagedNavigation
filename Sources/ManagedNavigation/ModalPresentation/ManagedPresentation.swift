@@ -64,7 +64,7 @@ public struct ManagedPresentation<Root: View>: View {
     @ViewBuilder root: () -> Root
   ) {
     _manager = manager
-    _navigator = StateObject(wrappedValue: Navigator(manager))
+    _navigator = StateObject(wrappedValue: Navigator(manager, kind: .modal))
     self.root = root()
   }
 

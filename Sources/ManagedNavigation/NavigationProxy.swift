@@ -20,6 +20,10 @@ public class Navigator: ObservableObject, Identifiable {
 
   let binding: Binding<NavigationManager>
   
+  /// The kind of container that owns this navigator.
+  public let kind: Kind
+
+  /// The `id` of the ``NavigationManager`` this navigator drives.
   public var id: NavigationManager.ID { binding.wrappedValue.id }
 
   /// The current navigation path.
@@ -27,8 +31,9 @@ public class Navigator: ObservableObject, Identifiable {
 
   // MARK: - Init
 
-  init(_ binding: Binding<NavigationManager>) {
+  init(_ binding: Binding<NavigationManager>, kind: Kind) {
     self.binding = binding
+    self.kind = kind
     self.path = binding.wrappedValue.path
   }
 
@@ -533,6 +538,18 @@ extension Navigator {
   }
 }
 
+extension Navigator {
+  /// The kind of container that owns a ``Navigator``.
+  public enum Kind: Sendable, Hashable, CaseIterable {
+    /// The navigator of a ``ManagedPresentation``: pushing presents sheets
+    /// and full-screen covers.
+    case modal
+    /// The navigator of a ``ManagedNavigationStack``: pushing adds
+    /// destinations to the `NavigationStack`.
+    case stack
+  }
+}
+
 extension EnvironmentValues {
   /// The navigator for the nearest ``ManagedNavigationStack`` or
   /// ``ManagedPresentation``.
@@ -555,9 +572,37 @@ extension EnvironmentValues {
   @Entry public internal(set) var navigators = NavigatorsContainer()
 }
 
+/// The navigators of every ``ManagedNavigationStack`` and
+/// ``ManagedPresentation`` that encloses a view.
+///
+/// You don't create a `NavigatorsContainer` yourself: read it from the
+/// environment with ``SwiftUICore/EnvironmentValues/navigators``.
+///
+/// Navigators are ordered from the outermost container to the nearest one, so
+/// ``nearest`` is the same navigator as ``SwiftUICore/EnvironmentValues/navigator``.
+/// You can look one up by the `id` of its manager, by position, or by
+/// ``Navigator/Kind``:
+///
+/// ```swift
+/// @Environment(\.navigators) private var navigators
+///
+/// navigators["main"]           // By manager id
+/// navigators.ancestor(1)       // The container just above the nearest one
+/// navigators.nearestStack      // The nearest ManagedNavigationStack
+/// navigators.nearestModal      // The nearest ManagedPresentation
+/// navigators.outermost(.modal) // The root ManagedPresentation
+/// ```
 public struct NavigatorsContainer {
   /// All ancestor navigators, ordered from the outermost to the nearest one.
   public internal(set) var navigators = [Navigator]()
+
+  /// The number of navigators in the container.
+  public var count: Int { navigators.count }
+
+  /// Whether the view is not inside any managed container.
+  public var isEmpty: Bool { navigators.isEmpty }
+
+  // MARK: - Lookup by id
 
   /// The navigator with the given manager id, or `nil` if none is found.
   /// If several share the same id, the nearest (innermost) one wins.
@@ -565,17 +610,79 @@ public struct NavigatorsContainer {
     navigators.last(where: { $0.id == id })
   }
 
-  /// The outermost navigator.
-  public var first: Navigator? { navigators.first }
+  /// Whether a navigator with the given manager id is among the ancestors.
+  public func contains(_ id: Navigator.ID) -> Bool {
+    navigators.contains(where: { $0.id == id })
+  }
 
-  /// The nearest navigator.
-  public var last: Navigator? { navigators.last }
+  // MARK: - Lookup by position
+
+  /// The navigator of the outermost container: the root of the hierarchy.
+  public var outermost: Navigator? { navigators.first }
+
+  /// The navigator of the nearest container: the same one as
+  /// ``SwiftUICore/EnvironmentValues/navigator``.
+  public var nearest: Navigator? { navigators.last }
 
   /// The navigator `level` levels above the nearest one (`0` is the nearest).
+  ///
+  /// Returns `nil` when `level` is negative or exceeds the number of ancestors.
   public func ancestor(_ level: Int) -> Navigator? {
     let index = navigators.count - 1 - level
     return navigators.indices.contains(index) ? navigators[index] : nil
   }
+
+  /// The navigator of the container that directly encloses the container of
+  /// `navigator`, or `nil` if `navigator` is the outermost one or is not in
+  /// this container.
+  ///
+  /// - Parameters:
+  ///   - navigator: The navigator whose parent to look up.
+  ///   - kind: When not `nil`, skips enclosing containers of a different kind
+  ///     and returns the nearest enclosing one of this kind.
+  public func parent(of navigator: Navigator, kind: Navigator.Kind? = nil) -> Navigator? {
+    guard let index = navigators.lastIndex(where: { $0 === navigator }) else { return nil }
+    return navigators[..<index].last(where: { kind == nil || $0.kind == kind })
+  }
+
+  // MARK: - Lookup by kind
+
+  /// All navigators of the given kind, ordered from the outermost to the
+  /// nearest one.
+  public func navigators(of kind: Navigator.Kind) -> [Navigator] {
+    navigators.filter { $0.kind == kind }
+  }
+
+  /// The nearest navigator of the given kind.
+  public func nearest(_ kind: Navigator.Kind) -> Navigator? {
+    navigators.last(where: { $0.kind == kind })
+  }
+
+  /// The outermost navigator of the given kind.
+  public func outermost(_ kind: Navigator.Kind) -> Navigator? {
+    navigators.first(where: { $0.kind == kind })
+  }
+
+  /// The navigator of the given kind `level` levels above the nearest one of
+  /// that kind (`0` is the nearest). Containers of a different kind are not
+  /// counted.
+  ///
+  /// ```swift
+  /// // Presentation(root) > Stack(a) > Presentation > Stack(b)
+  /// navigators.ancestor(0, of: .stack) // Stack(b)
+  /// navigators.ancestor(1, of: .stack) // Stack(a)
+  /// ```
+  public func ancestor(_ level: Int, of kind: Navigator.Kind) -> Navigator? {
+    let matching = navigators(of: kind)
+    let index = matching.count - 1 - level
+    return matching.indices.contains(index) ? matching[index] : nil
+  }
+
+  /// The navigator of the nearest ``ManagedNavigationStack``.
+  public var nearestStack: Navigator? { nearest(.stack) }
+
+  /// The navigator of the nearest ``ManagedPresentation``.
+  public var nearestModal: Navigator? { nearest(.modal) }
 
   mutating func register(_ navigator: Navigator) {
     navigators.append(navigator)

@@ -41,7 +41,7 @@ public struct ManagedNavigationStack<Root: View>: View {
     @ViewBuilder root: () -> Root
   ) {
     _manager = manager
-    _navigator = StateObject(wrappedValue: Navigator(manager))
+    _navigator = StateObject(wrappedValue: Navigator(manager, kind: .stack))
     self.root = root()
   }
 

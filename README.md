@@ -223,6 +223,20 @@ struct ChildView: View {
 }
 ```
 
+### Nested Navigators
+
+When containers are nested, `@Environment(\.navigators)` gives you every ancestor navigator, looked up by manager id, by position or by kind (`.stack` or `.modal`):
+
+```swift
+@Environment(\.navigators) private var navigators
+
+navigators["main"]?.push(DetailsDestination(id: "abc")) // By manager id
+navigators.nearestStack?.popToRoot()                    // Nearest ManagedNavigationStack
+navigators.nearestModal?.push(SettingsDestination())    // Nearest ManagedPresentation
+navigators.outermost(.modal)?.popToRoot()               // Dismiss every modal
+navigators.ancestor(1, of: .stack)?.pop()               // The stack one level up
+```
+
 For advanced usages, please refer to the full Documentation.
 
 ## Limitations
