@@ -48,10 +48,10 @@ public struct ManagedNavigationStack<Root: View>: View {
   public var body: some View {
     NavigationStack(path: $manager._path) {
       root
-    }
-    .environment(\.navigator, navigator)
-    .transformEnvironment(\.navigators) { container in
-      container.register(navigator)
+        .environment(\.navigator, navigator)
+        .transformEnvironment(\.navigators) { container in
+          container.register(navigator)
+        }
     }
     .onChange(of: manager.path.map { AnyHashable($0) }, initial: true) {
       navigator.syncPath()
