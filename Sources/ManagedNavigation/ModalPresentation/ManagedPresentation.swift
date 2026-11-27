@@ -254,9 +254,14 @@ private struct LevelResolver: View {
       level: level,
       depth: depth,
     )
-    .environment(\.self, presentationEnvironment)
-    .environment(model)
+    // `presentationEnvironment` (captured where the destination was registered) replaces the
+    // whole environment, and the modifier closest to the view wins: the presentation's own
+    // navigator and model go inside it. Otherwise a destination registered inside a
+    // `ManagedNavigationStack` would see that stack's navigator, and a swipe/`dismiss()` would
+    // pop the stack instead of this presentation, leaving the destination in the path.
     .environment(\.navigator, navigator)
+    .environment(model)
+    .environment(\.self, presentationEnvironment)
   }
 }
 
